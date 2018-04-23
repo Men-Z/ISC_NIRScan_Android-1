@@ -96,6 +96,8 @@ public class NewScanActivity extends Activity {
     public native int dlpSpecScanInterpReference(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[], double wavelength[],int intensity[],int uncalibratedIntensity[]);
     public static native int dlpSpecScanReadConfiguration(byte ConfigData[],int scanType[],int scanConfigIndex[],byte[] scanConfigSerialNumber,byte configName[],byte bufnumSections[],  byte sectionScanType[],
                                                    byte sectionWidthPx[], int sectionWavelengthStartNm[], int sectionWavelengthEndNm[], int sectionNumPatterns[], int sectionNumRepeats[], int sectionExposureTime[]);
+    public static native int dlpSpecScanReadOneSectionConfiguration(byte ConfigData[],int scanType[],  byte ScanType[],
+                                                                    byte WidthPx[], int WavelengthStartNm[], int WavelengthEndNm[], int NumPatterns[], int NumRepeats[], int ExposureTime[],int scanConfigIndex[],byte[] scanConfigSerialNumber,byte configName[]);
 
     private static Context mContext;
 
@@ -2228,7 +2230,15 @@ public class NewScanActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             receivedConfSize++;
-            NIRScanSDK.ScanConfiguration scanConf = GetScanConfiguration(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
+            NIRScanSDK.ScanConfiguration scanConf;
+            if(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA).length>100)
+            {
+                 scanConf = GetScanConfiguration(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
+            }
+            else
+            {
+               scanConf = GetOneSectionScanConfiguration(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
+            }
             ScanConfigList.add(scanConf);
 
             if (storedConfSize>0 && receivedConfSize==0) {
@@ -3175,6 +3185,31 @@ public class NewScanActivity extends Activity {
         NIRScanSDK.ScanConfiguration config = new  NIRScanSDK.ScanConfiguration(scanType,scanConfigIndex,scanConfigSerialNumber,configName,numSections,
                 sectionScanType,sectionWidthPx,sectionWavelengthStartNm,sectionWavelengthEndNm,sectionNumPatterns,sectionNumRepeats,sectionExposureTime);
         return config;
+    }
+    public NIRScanSDK.ScanConfiguration GetOneSectionScanConfiguration(byte EXTRA_DATA[])
+    {
+        int scanType=0;
+        byte[] ScanType=new byte[1];
+        byte[] WidthPx=new byte[1];
+        int[] WavelengthStartNm = new int[1];
+        int[] WavelengthEndNm = new int[1];
+        int[] NumPatterns = new int[1];
+        int[] NumRepeats = new int[1];
+        int[] ExposureTime = new int[1];
+        int scanConfigIndex=0;
+        int []bufscanConfigIndex= new int[1];
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        //-------------------------------------------------
+        int []bufscanType = new int[1];
+
+        dlpSpecScanReadOneSectionConfiguration(EXTRA_DATA,bufscanType,
+                ScanType,WidthPx,WavelengthStartNm,WavelengthEndNm,NumPatterns,NumRepeats,ExposureTime,bufscanConfigIndex,scanConfigSerialNumber,configName);
+        scanType = bufscanType[0];
+        scanConfigIndex = bufscanConfigIndex[0];
+        NIRScanSDK.ScanConfiguration config = new  NIRScanSDK.ScanConfiguration(scanType, scanConfigIndex,  scanConfigSerialNumber, configName, WavelengthStartNm[0],WavelengthEndNm[0],WidthPx[0], NumPatterns[0], NumRepeats[0]);
+        return config;
+
     }
 
     private void readActivateState()

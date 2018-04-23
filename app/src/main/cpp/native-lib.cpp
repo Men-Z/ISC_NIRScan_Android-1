@@ -236,3 +236,91 @@ Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanReadConfiguration(
     int ret = 1;
     return ret;
 }
+
+extern "C"
+JNIEXPORT int
+
+JNICALL
+Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanReadOneSectionConfiguration(
+        JNIEnv *env,
+        jobject,jbyteArray ConfigData,jintArray scanType,
+        jbyteArray sectionScanType, jbyteArray WidthPx, jintArray WavelengthStartNm, jintArray WavelengthEndNm, jintArray NumPatterns,
+        jintArray NumRepeats, jintArray ExposureTime,jintArray scanConfigIndex,jbyteArray scanConfigSerialNumber,jbyteArray configName/* this */) {
+
+    int len = env->GetArrayLength (ConfigData);
+    char* ConfigDataCharArray = new  char[len];
+    env->GetByteArrayRegion (ConfigData, 0, len, reinterpret_cast<jbyte*>(ConfigDataCharArray));
+    dlpspec_scan_read_configuration(ConfigDataCharArray,len);
+    uScanConfig *aScanConfig = (uScanConfig *)ConfigDataCharArray;
+
+    //scanType--------------------------------------------------------------------------------------
+    int scanType_len = env->GetArrayLength (scanType);
+    int* scanTypeIntArray = new  int[scanType_len];
+    env->GetIntArrayRegion (scanType, 0, scanType_len,scanTypeIntArray);
+    scanTypeIntArray[0] = aScanConfig->scanCfg.scan_type;
+    env->ReleaseIntArrayElements(scanType,scanTypeIntArray,0);
+    //startnum--------------------------------------------------------------------------------------
+    int WavelengthStartNm_len = env->GetArrayLength (WavelengthStartNm);
+    int* WavelengthStartNmIntArray = new  int[WavelengthStartNm_len];
+    env->GetIntArrayRegion (WavelengthStartNm, 0, WavelengthStartNm_len,WavelengthStartNmIntArray);
+    WavelengthStartNmIntArray[0] = aScanConfig->scanCfg.wavelength_start_nm;
+    env->ReleaseIntArrayElements(WavelengthStartNm,WavelengthStartNmIntArray,0);
+    //endnum--------------------------------------------------------------------------------------
+    int WavelengthEndNm_len = env->GetArrayLength (WavelengthEndNm);
+    int* WavelengthEndNmIntArray = new  int[WavelengthEndNm_len];
+    env->GetIntArrayRegion (WavelengthEndNm, 0, WavelengthEndNm_len,WavelengthEndNmIntArray);
+    WavelengthEndNmIntArray[0] = aScanConfig->scanCfg.wavelength_end_nm;
+    env->ReleaseIntArrayElements(WavelengthEndNm,WavelengthEndNmIntArray,0);
+    //width px--------------------------------------------------------------------------------------
+    int WidthPx_len = env->GetArrayLength (WidthPx);
+    char* WidthPxCharArray = new  char[WidthPx_len];
+    env->GetByteArrayRegion (WidthPx, 0, WidthPx_len,reinterpret_cast<jbyte*>(WidthPxCharArray));
+    WidthPxCharArray[0] = aScanConfig->scanCfg.width_px;
+    env->ReleaseByteArrayElements(WidthPx,reinterpret_cast<jbyte*>(WidthPxCharArray),0);
+    //number of pattern--------------------------------------------------------------------------------------
+    int NumPatterns_len = env->GetArrayLength (NumPatterns);
+    int* NumPatternsIntArray = new  int[NumPatterns_len];
+    env->GetIntArrayRegion (NumPatterns, 0, NumPatterns_len,NumPatternsIntArray);
+    NumPatternsIntArray[0] = aScanConfig->scanCfg.num_patterns;
+    env->ReleaseIntArrayElements(NumPatterns,NumPatternsIntArray,0);
+    //number of repeat--------------------------------------------------------------------------------------
+    int NumRepeats_len = env->GetArrayLength (NumRepeats);
+    int* NumRepeatsIntArray = new  int[NumRepeats_len];
+    env->GetIntArrayRegion (NumRepeats, 0,NumRepeats_len,NumRepeatsIntArray);
+    NumRepeatsIntArray[0] = aScanConfig->scanCfg.num_repeats;
+    env->ReleaseIntArrayElements(NumRepeats,NumRepeatsIntArray,0);
+    //exposure time--------------------------------------------------------------------------------------
+    int ExposureTime_len = env->GetArrayLength (ExposureTime);
+    int* ExposureTimeIntArray = new  int[ExposureTime_len];
+    env->GetIntArrayRegion (ExposureTime, 0, ExposureTime_len,ExposureTimeIntArray);
+    ExposureTimeIntArray[0] = aScanConfig->slewScanCfg.section[0].exposure_time;
+    env->ReleaseIntArrayElements(ExposureTime,ExposureTimeIntArray,0);
+    //scanConfigIndex--------------------------------------------------------------------------------------
+    int scanConfigIndex_len = env->GetArrayLength (scanConfigIndex);
+    int* scanConfigIndexIntArray = new  int[scanConfigIndex_len];
+    env->GetIntArrayRegion (scanConfigIndex, 0, scanConfigIndex_len,scanConfigIndexIntArray);
+    scanConfigIndexIntArray[0] = aScanConfig->scanCfg.scanConfigIndex;
+    env->ReleaseIntArrayElements(scanConfigIndex,scanConfigIndexIntArray,0);
+    //scanConfigSerialNumber--------------------------------------------------------------------------------------
+    int scanConfigSerialNumber_len = env->GetArrayLength (scanConfigSerialNumber);
+    char* scanConfigSerialNumberCharArray = new  char[scanConfigSerialNumber_len];
+    env->GetByteArrayRegion (scanConfigSerialNumber, 0, scanConfigSerialNumber_len, reinterpret_cast<jbyte*>(scanConfigSerialNumberCharArray));
+    for(int i=0;i<8;i++)
+    {
+        scanConfigSerialNumberCharArray[i] = aScanConfig->scanCfg.ScanConfig_serial_number[i];
+    }
+    env->ReleaseByteArrayElements(scanConfigSerialNumber,reinterpret_cast<jbyte*>(scanConfigSerialNumberCharArray),0);
+    //configName--------------------------------------------------------------------------------------
+    int configName_len = env->GetArrayLength (configName);
+    char* configNameCharArray = new  char[configName_len];
+    env->GetByteArrayRegion (configName, 0, configName_len, reinterpret_cast<jbyte*>(configNameCharArray));
+    for(int i=0;i<40;i++)
+    {
+        configNameCharArray[i] = aScanConfig->scanCfg.config_name[i];
+    }
+    env->ReleaseByteArrayElements(configName,reinterpret_cast<jbyte*>(configNameCharArray),0);
+
+    int ret = 1;
+    return ret;
+}
+
