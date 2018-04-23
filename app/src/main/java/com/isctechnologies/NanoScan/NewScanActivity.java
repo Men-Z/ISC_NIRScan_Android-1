@@ -840,6 +840,7 @@ public class NewScanActivity extends Activity {
         {
             LocalBroadcastManager.getInstance(mContext).registerReceiver(scanConfSizeReceiver, new IntentFilter(NIRScanSDK.SCAN_CONF_SIZE));
             LocalBroadcastManager.getInstance(mContext).registerReceiver(getActiveScanConfReceiver, new IntentFilter(NIRScanSDK.SEND_ACTIVE_CONF));
+            LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_ACTIVE_CONF));
         }
 
@@ -946,6 +947,8 @@ public class NewScanActivity extends Activity {
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(scanConfReceiver);
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(scanConfSizeReceiver);
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(getActiveScanConfReceiver);
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
+
             Intent configureIntent = new Intent(mContext, ConfigureActivity.class);
             startActivity(configureIntent);
         }
