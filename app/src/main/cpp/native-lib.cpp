@@ -323,4 +323,109 @@ Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanReadOneSectionConfi
     int ret = 1;
     return ret;
 }
+extern "C"
+JNIEXPORT int
+
+JNICALL
+Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanWriteConfiguration(
+        JNIEnv *env,
+        jobject,jint scanType,jint scanConfigIndex,jint numRepeat,jbyteArray scanConfigSerialNumber,jbyteArray configName,jbyte numSections,
+        jbyteArray sectionScanType, jbyteArray sectionWidthPx, jintArray sectionWavelengthStartNm, jintArray sectionWavelengthEndNm, jintArray sectionNumPatterns
+        , jintArray sectionExposureTime,jbyteArray EXTRA_DATA) {
+    uScanConfig *aScanConfig = new uScanConfig();
+
+    aScanConfig->scanCfg.scan_type = scanType;
+    aScanConfig->scanCfg.scanConfigIndex = scanConfigIndex;
+    aScanConfig->scanCfg.num_repeats = numRepeat;
+    aScanConfig->slewScanCfg.head.num_repeats = numRepeat;
+    //SerialNumber-------------------------------------------------------------------------------------------------------------
+    int scanConfigSerialNumber_len = env->GetArrayLength (scanConfigSerialNumber);
+    char* scanConfigSerialNumberCharArray = new  char[scanConfigSerialNumber_len];
+    env->GetByteArrayRegion (scanConfigSerialNumber, 0, scanConfigSerialNumber_len, reinterpret_cast<jbyte*>(scanConfigSerialNumberCharArray));
+    for(int i=0;i<8;i++)
+    {
+        aScanConfig->scanCfg.ScanConfig_serial_number[i]=scanConfigSerialNumberCharArray[i];
+    }
+    env->ReleaseByteArrayElements(scanConfigSerialNumber,reinterpret_cast<jbyte*>(scanConfigSerialNumberCharArray),0);
+    //configName--------------------------------------------------------------------------------------
+    int configName_len = env->GetArrayLength (configName);
+    char* configNameCharArray = new  char[configName_len];
+    env->GetByteArrayRegion (configName, 0, configName_len, reinterpret_cast<jbyte*>(configNameCharArray));
+    for(int i=0;i<40;i++)
+    {
+        aScanConfig->scanCfg.config_name[i] =configNameCharArray[i];
+    }
+    env->ReleaseByteArrayElements(configName,reinterpret_cast<jbyte*>(configNameCharArray),0);
+    //----------------------------------------------------------------------------------------
+    aScanConfig->slewScanCfg.head.num_sections = reinterpret_cast<jbyte>(numSections);
+    //sectionScanType--------------------------------------------------------------------------------------------------------------
+    int sectionScanType_len = env->GetArrayLength (sectionScanType);
+    char* sectionScanTypeCharArray = new  char[sectionScanType_len];
+    env->GetByteArrayRegion (sectionScanType, 0, sectionScanType_len, reinterpret_cast<jbyte*>(sectionScanTypeCharArray));
+    int section = aScanConfig->slewScanCfg.head.num_sections;
+    for(int i=0;i<section;i++)
+    {
+        aScanConfig->slewScanCfg.section[i].section_scan_type =  sectionScanTypeCharArray[i];
+    }
+    env->ReleaseByteArrayElements(sectionScanType,reinterpret_cast<jbyte*>(sectionScanTypeCharArray),0);
+    //sectionWidthPx--------------------------------------------------------------------------------------------------------------
+    int sectionWidthPx_len = env->GetArrayLength (sectionWidthPx);
+    char* sectionWidthPxCharArray = new  char[sectionWidthPx_len];
+    env->GetByteArrayRegion (sectionWidthPx, 0, sectionWidthPx_len, reinterpret_cast<jbyte*>(sectionWidthPxCharArray));
+    for(int i=0;i<section;i++)
+    {
+        aScanConfig->slewScanCfg.section[i].width_px =  sectionWidthPxCharArray[i];
+    }
+    env->ReleaseByteArrayElements(sectionWidthPx,reinterpret_cast<jbyte*>(sectionWidthPxCharArray),0);
+    //sectionWavelengthStartNm--------------------------------------------------------------------------------------------------------------
+    int sectionWavelengthStartNm_len = env->GetArrayLength (sectionWavelengthStartNm);
+    int * sectionWavelengthStartNmIntArray = new  int[sectionWidthPx_len];
+    env->GetIntArrayRegion (sectionWavelengthStartNm, 0, sectionWavelengthStartNm_len, sectionWavelengthStartNmIntArray);
+    for(int i=0;i<section;i++)
+    {
+        aScanConfig->slewScanCfg.section[i].wavelength_start_nm= sectionWavelengthStartNmIntArray[i];
+    }
+    env->ReleaseIntArrayElements(sectionWavelengthStartNm,sectionWavelengthStartNmIntArray,0);
+    //sectionWavelengthEndNm--------------------------------------------------------------------------------------------------------------
+    int sectionWavelengthEndNm_len = env->GetArrayLength (sectionWavelengthEndNm);
+    int * sectionWavelengthEndNmIntArray = new  int[sectionWavelengthEndNm_len];
+    env->GetIntArrayRegion (sectionWavelengthEndNm, 0, sectionWavelengthEndNm_len, sectionWavelengthEndNmIntArray);
+    for(int i=0;i<section;i++)
+    {
+        aScanConfig->slewScanCfg.section[i].wavelength_end_nm= sectionWavelengthEndNmIntArray[i];
+    }
+    env->ReleaseIntArrayElements(sectionWavelengthEndNm,sectionWavelengthEndNmIntArray,0);
+    //sectionNumPatterns--------------------------------------------------------------------------------------------------------------
+    int sectionNumPatterns_len = env->GetArrayLength (sectionNumPatterns);
+    int * sectionNumPatternsIntArray = new  int[sectionNumPatterns_len];
+    env->GetIntArrayRegion (sectionNumPatterns, 0, sectionNumPatterns_len, sectionNumPatternsIntArray);
+    for(int i=0;i<section;i++)
+    {
+        aScanConfig->slewScanCfg.section[i].num_patterns=sectionNumPatternsIntArray[i];
+    }
+    env->ReleaseIntArrayElements(sectionNumPatterns,sectionNumPatternsIntArray,0);
+    //sectionExposureTime--------------------------------------------------------------------------------------------------------------
+    int sectionExposureTime_len = env->GetArrayLength (sectionExposureTime);
+    int * sectionExposureTimeIntArray = new  int[sectionExposureTime_len];
+    env->GetIntArrayRegion (sectionExposureTime, 0, sectionExposureTime_len, sectionExposureTimeIntArray);
+    for(int i=0;i<section;i++)
+    {
+        aScanConfig->slewScanCfg.section[i].exposure_time = sectionExposureTimeIntArray[i];
+    }
+    env->ReleaseIntArrayElements(sectionExposureTime,sectionExposureTimeIntArray,0);
+
+    char* pBuf = new  char[155];
+    dlpspec_scan_write_configuration(aScanConfig, pBuf, 155);
+    int EXTRA_DATA_len = env->GetArrayLength (EXTRA_DATA);
+    char* EXTRA_DATACharArray = new  char[EXTRA_DATA_len];
+    env->GetByteArrayRegion (EXTRA_DATA, 0, EXTRA_DATA_len, reinterpret_cast<jbyte*>(EXTRA_DATACharArray));
+    for(int i=0;i<155;i++)
+    {
+        EXTRA_DATACharArray[i] = pBuf[i];
+    }
+    env->ReleaseByteArrayElements(EXTRA_DATA,reinterpret_cast<jbyte*>(EXTRA_DATACharArray),0);
+
+    int ret = 1;
+    return ret;
+}
 

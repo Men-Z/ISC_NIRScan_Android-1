@@ -49,6 +49,7 @@ public class NanoBLEService extends Service {
     ByteArrayOutputStream refMatrix = new ByteArrayOutputStream();
     ByteArrayOutputStream scanConf = new ByteArrayOutputStream();
     ByteArrayOutputStream SpectrumCalCoefficients = new ByteArrayOutputStream();
+    ByteArrayOutputStream CurrentScanConfigurationData = new ByteArrayOutputStream();
 
     //Scan and reference calibration information variables
     int size;
@@ -60,6 +61,7 @@ public class NanoBLEService extends Service {
     int scanConfIndex;
     int storedSDScanSize;
     int SpectrumCalCoefficientsSize;
+    int CurrentScanConfigurationDataSize;
     private String scanName;
     private byte[] storedScanName;
     private String scanType;
@@ -133,8 +135,10 @@ public class NanoBLEService extends Service {
     private static BroadcastReceiver mLamptimeReceiver;
     private static BroadcastReceiver mQuickSetReceiver;
     private static BroadcastReceiver mSaveReferencetReceiver;
-    private static BroadcastReceiver mReadActivateStateReceiver;
     private static BroadcastReceiver mActivateStateReceiver;
+    private static BroadcastReceiver mReadCurrentConfigReceiver;
+    private static BroadcastReceiver mWriteScanConfigReceiver;
+    private static BroadcastReceiver mReadActivateStateReceiver;
 
     public static final String ACTION_SCAN_STARTED = "com.isctechnologies.NanoScan.bluetooth.service.ACTION_SCAN_STARTED";
 
@@ -143,6 +147,7 @@ public class NanoBLEService extends Service {
 
     //CCID UUID as a string. The hyphens and lower case letters are intentional and must remain as provided.
     UUID CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+
 
     /**
      * Implements callback methods for GATT events that the app cares about.  These include
@@ -304,9 +309,22 @@ public class NanoBLEService extends Service {
                 BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicCharacteristicActivateStateNotify.getDescriptor(CCCD_UUID);
                 mDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 NIRScanSDK.mBluetoothGatt.writeDescriptor(mDescriptor);
+
             }else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RETURN_ACTIVATE_STATE) == 0) {
                 if (debug)
-                    Log.d(TAG, "Wrote Notify request for GSDIS_RETURN_ACTIVATE_STATE");
+                    Log.d(TAG, "Wrote Notify request for GSDIS_ACTIVATE_STATE");
+                BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnCurrentScanConfigurationData.getDescriptor(CCCD_UUID);
+                mDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                NIRScanSDK.mBluetoothGatt.writeDescriptor(mDescriptor);
+            }else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RETURN_CURRENT_SCANCONFIG_DATA) == 0) {
+                if (debug)
+                    Log.d(TAG, "Wrote Notify request for GSDIS_RETURN_CURRENT_SCANCONFIG_DATA");
+                BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData.getDescriptor(CCCD_UUID);
+                mDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                NIRScanSDK.mBluetoothGatt.writeDescriptor(mDescriptor);
+            }else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RETURN_WRITE_SCANCONFIG_DATA) == 0) {
+                if (debug)
+                    Log.d(TAG, "Wrote Notify request for GSDIS_RETURN_WRITE_SCANCONFIG_DATA");
                 Intent notifyCompleteIntent = new Intent(NIRScanSDK.ACTION_NOTIFY_DONE);
                 LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(notifyCompleteIntent);
             }
@@ -418,7 +436,7 @@ public class NanoBLEService extends Service {
                     if (debug)
                         Log.d(TAG, "Num stored scan configs:" + scanConfIndexSize);
 
-                    NIRScanSDK.requestStoredConfigurationList();
+                     NIRScanSDK.requestStoredConfigurationList();
                 } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GSDIS_NUM_SD_STORED_SCANS)) {
                     byte[] data = characteristic.getValue();
 
@@ -451,6 +469,9 @@ public class NanoBLEService extends Service {
                     Intent ReadActivateStateIntent = new Intent(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
                     ReadActivateStateIntent.putExtra(NIRScanSDK.RETURN_READ_ACTIVATE_STATE, data);
                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(ReadActivateStateIntent);
+                } else {
+                    if (debug)
+                        Log.d(TAG, "Read from unknown characteristic:" + characteristic.getUuid().toString());
                 }
             }
         }
@@ -470,7 +491,6 @@ public class NanoBLEService extends Service {
                                             BluetoothGattCharacteristic characteristic) {
             if (debug)
                 Log.d(TAG, "onCharacteristic changed for characteristic:" + characteristic.getUuid().toString());
-
             if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISStartScanNotify) {
                 Intent scanStartedIntent = new Intent(ACTION_SCAN_STARTED);
                 LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(scanStartedIntent);
@@ -478,10 +498,12 @@ public class NanoBLEService extends Service {
                 refConf.reset();
                 refMatrix.reset();
                 SpectrumCalCoefficients.reset();
+                CurrentScanConfigurationData.reset();
                 size = 0;
                 refSize = 0;
                 refMatrixSize = 0;
                 SpectrumCalCoefficientsSize = 0;
+                CurrentScanConfigurationDataSize=0;
                 final byte[] data = characteristic.getValue();
                 if (data[0] == (byte) 0xff) {
                     if (debug)
@@ -493,8 +515,10 @@ public class NanoBLEService extends Service {
                     if (debug)
                         Log.d(TAG, "the scan index is:" + scanIndex[0] + " " + scanIndex[1] + " " + scanIndex[2] + " " + scanIndex[3]);
 
-                    NIRScanSDK.requestScanName(scanIndex);
+                   // NIRScanSDK.requestScanName(scanIndex);
+                    NIRScanSDK.requestSerializedScanDataStruct(scanIndex);
                 }
+
             } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanName) {
                 final byte[] data = characteristic.getValue();
 
@@ -650,12 +674,13 @@ public class NanoBLEService extends Service {
                 int receiveConfigsize = 0;
                 //the first data  + data header + data two bytes
                 //ex:12 scan data,{0,24,0,0,0},{1,102,0,103,0,104,0,105,0,106,0,107,0,108,0,109,0,110,0,111},{2,0,112,0,113,0}
-                int totalConfigsize = 4 + scanConfList.size() + scanConfIndexSize * 2;
-                for (int i = 0; i < scanConfList.size(); i++) {
+                int totalConfigsize = 4 + scanConfList.size()  + scanConfIndexSize*2 ;
+                for(int i=0;i<scanConfList.size();i++)
+                {
                     receiveConfigsize += scanConfList.get(i).length;
                 }
                 //------------------------------------------------------------------------------------
-                if (scanConfIndexSize == 1 && scanConfList.size() > 1) {
+                if(scanConfIndexSize == 1 && scanConfList.size() > 1) {
 
                     scanConfIndex = 1;
                     byte[] confIndex = {0, 0};
@@ -699,7 +724,7 @@ public class NanoBLEService extends Service {
                     NIRScanSDK.requestScanName(indexData);
                 }
 
-            } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSCISRetScanConfData) {
+            } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSCISRetScanConfData ) {
 
                 final byte[] data = characteristic.getValue();
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
@@ -730,23 +755,30 @@ public class NanoBLEService extends Service {
                                 Log.d(TAG, "Retrieving scan at index:" + scanConfIndex + " Size is:" + scanConfList.size());
                             //<10 data
                             //data set  scan data,{0,24,0,0,0},{1,102,0,103,0,104,0,105,0,106,0,107,0,108,0,109,0,110,0,111},{2,0,112,0,113,0}
-                            if (scanConfIndex < 10) {
-                                confIndex[0] = scanConfList.get(1)[(scanConfIndex - 1) * 2 + 1];
-                                confIndex[1] = scanConfList.get(1)[(scanConfIndex - 1) * 2 + 2];
-                            } else if (scanConfIndex == 10) {
-                                confIndex[0] = scanConfList.get(1)[(scanConfIndex - 1) * 2 + 1];
+                            if(scanConfIndex<10)
+                            {
+                                confIndex[0] = scanConfList.get(1)[(scanConfIndex-1)*2 + 1 ];
+                                confIndex[1] = scanConfList.get(1)[(scanConfIndex-1)*2 + 2 ];
+                            }
+                            else if(scanConfIndex == 10)
+                            {
+                                confIndex[0] = scanConfList.get(1)[(scanConfIndex-1)*2 + 1 ];
                                 confIndex[1] = scanConfList.get(2)[1];
-                            } else if (scanConfIndex == 20) {
+                            }
+                            else if(scanConfIndex == 20)
+                            {
                                 confIndex[0] = scanConfList.get(3)[1];
                                 confIndex[1] = scanConfList.get(3)[2];
                             }
                             //>10 data
-                            else {
-                                confIndex[0] = scanConfList.get(2)[(scanConfIndex - 10 - 1) * 2 + 2];
-                                confIndex[1] = scanConfList.get(2)[(scanConfIndex - 10 - 1) * 2 + 3];
+                            else
+                            {
+                                confIndex[0] = scanConfList.get(2)[ (scanConfIndex -10 -1)*2 + 2];
+                                confIndex[1] = scanConfList.get(2)[ (scanConfIndex -10 -1)*2 + 3];
                             }
                             //When receive all data,should clear scanConfList,this fix scan configuration twice can't download scan config
-                            if (scanConfIndex == scanConfIndexSize) {
+                            if(scanConfIndex == scanConfIndexSize)
+                            {
                                 scanConfList.clear();
                             }
 
@@ -766,7 +798,7 @@ public class NanoBLEService extends Service {
                         activeConfRequested = false;
                     }
                 }
-            } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGCISRetSpecCalCoefficients) {
+            }else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGCISRetSpecCalCoefficients) {
                 final byte[] data = characteristic.getValue();
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
                 for (byte byteChar : data)
@@ -774,25 +806,28 @@ public class NanoBLEService extends Service {
                 if (debug)
                     Log.d(TAG, "Receive SpectrumCalCoefficients:" + stringBuilder.toString());
                 //--------------------------------------------------------------------------------------
-                if (data[0] == 0x00) {
+                if(data[0] == 0x00)
+                {
                     SpectrumCalCoefficientsSize = 0;
                     SpectrumCalCoefficients.reset();
-                    SpectrumCalCoefficientsSize = (((data[2]) << 8) | (data[1] & 0xFF));
-                    System.out.println("iris SpectrumCalCoefficientssize" + SpectrumCalCoefficientsSize);
-                } else {
+					SpectrumCalCoefficientsSize = (((data[2]) << 8) | (data[1] & 0xFF));
+                }
+                else
+                {
                     int i;
                     for (i = 1; i < data.length; i++) {
                         SpectrumCalCoefficients.write(data[i]);
                     }
                 }
-                if (SpectrumCalCoefficients.size() == SpectrumCalCoefficientsSize) {
+                if(SpectrumCalCoefficients.size() == SpectrumCalCoefficientsSize)
+                {
                     SpectrumCalCoefficientsSize = 0;
                     if (debug)
                         Log.d(TAG, "Done collecting reference SpectrumCalCoefficients");
                     broadcastUpdateSPEC(NIRScanSDK.SPEC_CONF_DATA, SpectrumCalCoefficients.toByteArray());
                 }
 
-            } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify) {
+            }  else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify) {
                 final byte[] data = characteristic.getValue();
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
                 for (byte byteChar : data)
@@ -807,13 +842,48 @@ public class NanoBLEService extends Service {
                 if (debug)
                     Log.d(TAG, "Received Activate State status:" + stringBuilder.toString());
                 broadcastReturnActivateState(NIRScanSDK.ACTION_RETURN_ACTIVATE, data);
-            } else
-            {
+            } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnCurrentScanConfigurationData) {
+                final byte[] data = characteristic.getValue();
+                final StringBuilder stringBuilder = new StringBuilder(data.length);
+                for (byte byteChar : data)
+                    stringBuilder.append(String.format("%02X ", byteChar));
+                if (debug)
+                    Log.d(TAG, "Receive Current ScanConfiguration Data:" + stringBuilder.toString());
+                //--------------------------------------------------------------------------------------
+                if(data[0] == 0x00)
+                {
+                    CurrentScanConfigurationDataSize = 0;
+                    CurrentScanConfigurationData.reset();
+                    CurrentScanConfigurationDataSize = (((data[2]) << 8) | (data[1] & 0xFF));
+                    System.out.println("iris CurrentScanConfigurationData Size" + CurrentScanConfigurationDataSize);
+                }
+                else
+                {
+                    int i;
+                    for (i = 1; i < data.length; i++) {
+                        CurrentScanConfigurationData.write(data[i]);
+                    }
+                }
+                if(CurrentScanConfigurationData.size() == CurrentScanConfigurationDataSize)
+                {
+                    CurrentScanConfigurationDataSize = 0;
+                    if (debug)
+                        Log.d(TAG, "Done collecting reference CurrentScanConfigurationData");
+                    broadcastUpdateCurrentConfig(NIRScanSDK.RETURN_CURRENT_CONFIG_DATA, CurrentScanConfigurationData.toByteArray());
+                }
+
+            } else if (characteristic == NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData) {
+                final byte[] data = characteristic.getValue();
+                final StringBuilder stringBuilder = new StringBuilder(data.length);
+                for (byte byteChar : data)
+                    stringBuilder.append(String.format("%02X ", byteChar));
+                if (debug)
+                    Log.d(TAG, "Received Write scan config status:" + stringBuilder.toString());
+                broadcastUpdateWriteScanConfigStatus(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS, data);
+            }else {
                 if (debug)
                     Log.d(TAG, "Received notify/indicate from unknown characteristic:" + characteristic.getUuid().toString());
             }
-
-
         }
 
         /**
@@ -918,9 +988,19 @@ public class NanoBLEService extends Service {
             } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GGIS_HUMID_THRESH)) {
                 if (debug)
                     Log.d(TAG, "Wrote Humidity threshold! status=" + status);
+            }else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GSDIS_READ_CURRENT_SCANCONFIG_DATA)) {
+                if (debug)
+                    Log.d(TAG, "Read current scanconfig data status=" + status);
+            } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GSDIS_ACTIVATE_STATE)) {
+                if (debug)
+                    Log.d(TAG, "Write activate state=" + status);
+            } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GSDIS_WRITE_SCANCONFIG_DATA)) {
+                if (debug)
+                    Log.d(TAG, "Write Scan config data! status=" + status);
+                NIRScanSDK.ReadScanConfigDataStatus();
             } else {
                 if (debug)
-                    Log.d(TAG, "Unknown characteristic");
+                    Log.d(TAG, "Unknown characteristic" + characteristic.getUuid());
             }
         }
     };
@@ -960,6 +1040,19 @@ public class NanoBLEService extends Service {
 
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
+
+    /**
+     * Sends the desired broadcast action with the data provided by scanData
+     *
+     * @param action   the action to broadcast
+     * @param WriteScanConfigStatus the data to add to the broadcast
+     */
+    private void broadcastUpdateWriteScanConfigStatus(final String action,
+                                     byte[] WriteScanConfigStatus) {
+        final Intent intent = new Intent(action);
+        intent.putExtra(NIRScanSDK.RETURN_WRITE_SCAN_CONFIG_STATUS, WriteScanConfigStatus);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+    }
     /**
      * Sends the desired broadcast action with the data provided by scanData
      *
@@ -967,12 +1060,12 @@ public class NanoBLEService extends Service {
      * @param state the data to add to the broadcast
      */
     private void broadcastReturnActivateState(final String action,
-                                              byte[] state) {
+                                     byte[] state) {
         final Intent intent = new Intent(action);
         intent.putExtra(NIRScanSDK.RETURN_ACTIVATE_STATUS, state);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
-
+    /**
     /**
      * Sends the desired broadcast action with the data provided by scanData
      *
@@ -985,7 +1078,18 @@ public class NanoBLEService extends Service {
         intent.putExtra(NIRScanSDK.EXTRA_SPEC_COEF_DATA, SPECData);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
-
+    /**
+     * Sends the desired broadcast action with the data provided by scanData
+     *
+     * @param action   the action to broadcast
+     * @param currentconfigdata the data to add to the broadcast
+     */
+    private void broadcastUpdateCurrentConfig(final String action,
+                                     byte[] currentconfigdata) {
+        final Intent intent = new Intent(action);
+        intent.putExtra(NIRScanSDK.EXTRA_CURRENT_CONFIG_DATA, currentconfigdata);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+    }
     /**
      * Sends the desired broadcast action with the data provided by scanData
      *
@@ -1444,6 +1548,16 @@ public class NanoBLEService extends Service {
             }
         };
 
+        mActivateStateReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (debug)
+                    Log.d(TAG, "Setting Activate State Key");
+                byte[] data = intent.getByteArrayExtra(NIRScanSDK.ACTIVATE_STATE_KEY);
+                NIRScanSDK.SetActiveStateKey(data);
+            }
+        };
+
         mReadActivateStateReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -1453,13 +1567,23 @@ public class NanoBLEService extends Service {
             }
         };
 
-        mActivateStateReceiver = new BroadcastReceiver() {
+        mReadCurrentConfigReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (debug)
-                    Log.d(TAG, "Setting Activate State Key");
-                byte[] data = intent.getByteArrayExtra(NIRScanSDK.ACTIVATE_STATE_KEY);
-                NIRScanSDK.SetActiveStateKey(data);
+                    Log.d(TAG, "Read Current Config");
+                byte[] data = intent.getByteArrayExtra(NIRScanSDK.READ_CONFIG_DATA);
+                NIRScanSDK.ReadCurrentConfig(data);
+            }
+        };
+
+        mWriteScanConfigReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (debug)
+                    Log.d(TAG, "Write Scan Config ");
+                byte[] data = intent.getByteArrayExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE);
+                NIRScanSDK.writeScanConfig(data);
             }
         };
 
@@ -1484,8 +1608,10 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mLamptimeReceiver, new IntentFilter(NIRScanSDK.ACTION_LAMP_TIME));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mQuickSetReceiver, new IntentFilter(NIRScanSDK.ACTION_QUICK_SET));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mSaveReferencetReceiver, new IntentFilter(NIRScanSDK.ACTION_SAVE_REFERENCE));
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_ACTIVATE_STATE));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_ACTIVATE_STATE));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadCurrentConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_CONFIG));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mWriteScanConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_ACTIVATE_STATE));
 
     }
 
@@ -1508,8 +1634,18 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mSetActiveScanConfReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mUpdateThresholdReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mRequestActiveConfReceiver);
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadActivateStateReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mScanModeReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mLampReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mPGAReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mRepeatReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mInterScanReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mLamptimeReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mQuickSetReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mSaveReferencetReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mActivateStateReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadCurrentConfigReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mWriteScanConfigReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadActivateStateReceiver);
     }
 
     @Override

@@ -98,6 +98,9 @@ public class NewScanActivity extends Activity {
                                                    byte sectionWidthPx[], int sectionWavelengthStartNm[], int sectionWavelengthEndNm[], int sectionNumPatterns[], int sectionNumRepeats[], int sectionExposureTime[]);
     public static native int dlpSpecScanReadOneSectionConfiguration(byte ConfigData[],int scanType[],  byte ScanType[],
                                                                     byte WidthPx[], int WavelengthStartNm[], int WavelengthEndNm[], int NumPatterns[], int NumRepeats[], int ExposureTime[],int scanConfigIndex[],byte[] scanConfigSerialNumber,byte configName[]);
+    public static native int dlpSpecScanWriteConfiguration(int scanType,int scanConfigIndex,int numRepeat,byte[] scanConfigSerialNumber,byte[] configName,byte numSections,
+                                                           byte[] sectionScanType, byte[] sectionWidthPx, int[] sectionWavelengthStartNm, int[] sectionWavelengthEndNm, int[] sectionNumPatterns
+            , int[] sectionExposureTime,byte[] EXTRA_DATA);
 
     private static Context mContext;
 
@@ -124,6 +127,7 @@ public class NewScanActivity extends Activity {
     private final BroadcastReceiver RetrunReadActivateStatusReceiver = new RetrunReadActivateStatusReceiver();
     private final IntentFilter RetrunReadActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
     private final BroadcastReceiver RetrunActivateStatusReceiver = new RetrunActivateStatusReceiver();
+    private final BroadcastReceiver ReturnCurrentScanConfigurationDataReceiver = new ReturnCurrentScanConfigurationDataReceiver();
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(NIRScanSDK.SCAN_DATA);
     private final IntentFilter refReadyFilter = new IntentFilter(NIRScanSDK.REF_CONF_DATA);
@@ -137,6 +141,7 @@ public class NewScanActivity extends Activity {
     private final BroadcastReceiver scanConfReceiver = new ScanConfReceiver();
     private final IntentFilter scanConfFilter = new IntentFilter(NIRScanSDK.SCAN_CONF_DATA);
     private final IntentFilter RetrunActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_ACTIVATE);
+    private final IntentFilter  ReturnCurrentScanConfigurationDataFilter = new IntentFilter(NIRScanSDK.RETURN_CURRENT_CONFIG_DATA);
 
     private ProgressBar calProgress;
     private NIRScanSDK.ScanResults results;
@@ -246,6 +251,10 @@ public class NewScanActivity extends Activity {
 
     public static byte []passSpectrumCalCoefficients = new byte[144];
     public static Boolean Licensestatusfalg = false;
+    Boolean downloadspecFlag = false;
+
+    private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
+    private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -499,6 +508,7 @@ public class NewScanActivity extends Activity {
                         controlRepeat();
 
                         Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN); calProgress.setVisibility(View.VISIBLE);
+                        calProgress.setVisibility(View.VISIBLE);
                         LocalBroadcastManager.getInstance(mContext).sendBroadcast(scan);
                         startTime = System.currentTimeMillis();
 
@@ -687,6 +697,9 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(SpectrumCalCoefficientsReadyReceiver, SpectrumCalCoefficientsReadyFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunReadActivateStatusReceiver, RetrunReadActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
+
         //----------------------------------------------------------------
     }
     private void Dialog_Pane_maintain(String title,String content)
@@ -895,6 +908,9 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(SpectrumCalCoefficientsReadyReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunReadActivateStatusReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnCurrentScanConfigurationDataReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
+
 
         mHandler.removeCallbacksAndMessages(null);
 
@@ -911,7 +927,7 @@ public class NewScanActivity extends Activity {
         getMenuInflater().inflate(R.menu.menu_new_scan, menu);
         mMenu = menu;
         mMenu.findItem(R.id.action_settings).setEnabled(false);
-
+        mMenu.findItem(R.id.action_key).setEnabled(false);
         return true;
     }
 
@@ -2302,7 +2318,14 @@ public class NewScanActivity extends Activity {
                 tv_scan_conf.setText(activeConf.getConfigName());
                 tv_scan_conf_manual.setText(activeConf.getConfigName());
 
-                NIRScanSDK.requestSpectrumCalCoefficients();
+                //NIRScanSDK.requestSpectrumCalCoefficients();
+                //only download SpectrumCalCoefficients once
+                if(downloadspecFlag ==false)
+                {
+                    NIRScanSDK.requestSpectrumCalCoefficients();
+                    downloadspecFlag = true;
+                }
+
             }
 
         }
@@ -2938,7 +2961,8 @@ public class NewScanActivity extends Activity {
             {
                 btn_set_value.setClickable(false);
                 btn_scan.setClickable(false);
-                quickset(NIRScanConfigNumRepeats);
+                calProgress.setVisibility(view.VISIBLE);
+               /* quickset(NIRScanConfigNumRepeats);
                 quickset(NIRScanConfigNumSections);
                 quickset(NIRScanConfigType);
                 quickset(NIRScanConfigWidth);
@@ -2947,7 +2971,8 @@ public class NewScanActivity extends Activity {
                 quickset(NIRScanConfigNumPattern);
                 quickset(NIRScanConfigExposureTime);
                 quickset(NIRScanConfigSet);
-                Dialog_Pane_Delay("Finish","Complete set config.");
+                Dialog_Pane_Delay("Finish","Complete set config.");*/
+                SetScanConfiguration();
             }
 
         }
@@ -3307,6 +3332,259 @@ public class NewScanActivity extends Activity {
             else
             {
                 Dialog_Pane("Unlock device","Some functions are locked.");
+            }
+        }
+    }
+    //--------------------------------------------------------------------------------------------------
+    private void ReadCurrentScanConfig()
+    {
+
+        Intent ReadConfig = new Intent(NIRScanSDK.ACTION_READ_CONFIG);
+        byte data[] = new byte[1];
+        data[0] = (byte) 0x01;
+        ReadConfig.putExtra(NIRScanSDK.READ_CONFIG_DATA, data);
+        LocalBroadcastManager.getInstance(mContext).sendBroadcast(ReadConfig);
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    public class ReturnCurrentScanConfigurationDataReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            byte currentconfig[ ] = intent.getByteArrayExtra(NIRScanSDK.EXTRA_CURRENT_CONFIG_DATA);
+            Boolean flag = Compareconfig(intent.getByteArrayExtra(NIRScanSDK.EXTRA_CURRENT_CONFIG_DATA));
+            calProgress.setVisibility(View.GONE);
+            if(flag)
+            {
+                Dialog_Pane("Success","Complete to set configuration.");
+            }
+            else
+            {
+                Dialog_Pane("Fail","Set configuration fail.");
+            }
+        }
+    }
+    public Boolean Compareconfig(byte EXTRA_DATA[])
+    {
+        if(EXTRA_DATA.length!=155)
+        {
+            return false;
+        }
+        int scanType=0;
+        int scanConfigIndex=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        byte numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionNumRepeats = new int[5];
+        int[] sectionExposureTime = new int[5];
+        //-------------------------------------------------
+        int []bufscanType = new int[1];
+        int []bufscanConfigIndex= new int[1];
+        byte[]bufnumSections = new byte[1];
+
+        dlpSpecScanReadConfiguration(EXTRA_DATA,bufscanType,bufscanConfigIndex,scanConfigSerialNumber,configName,bufnumSections,
+                sectionScanType,sectionWidthPx,sectionWavelengthStartNm,sectionWavelengthEndNm,sectionNumPatterns,sectionNumRepeats,sectionExposureTime);
+
+        scanType = bufscanType[0];
+        numSections = bufnumSections[0];
+        NIRScanSDK.ScanConfiguration config = new  NIRScanSDK.ScanConfiguration(scanType,scanConfigIndex,scanConfigSerialNumber,configName,numSections,
+                sectionScanType,sectionWidthPx,sectionWavelengthStartNm,sectionWavelengthEndNm,sectionNumPatterns,sectionNumRepeats,sectionExposureTime);
+
+        if(config.getSectionScanType()[0]!= spin_scan_method.getSelectedItemPosition())
+        {
+            return false;
+        }
+        if(Integer.parseInt(et_spec_start.getText().toString())!=config.getSectionWavelengthStartNm()[0])
+        {
+            return false;
+        }
+        if(Integer.parseInt(et_spec_end.getText().toString())!=config.getSectionWavelengthEndNm()[0])
+        {
+            return false;
+        }
+        if(config.getSectionWidthPx()[0]!= spin_scan_width.getSelectedItemPosition()+2)
+        {
+            return false;
+        }
+        if(Integer.parseInt(et_res.getText().toString())!=config.getSectionNumPatterns()[0])
+        {
+            return false;
+        }
+        if(Integer.parseInt(et_aver_scan.getText().toString())!= config.getSectionNumRepeats()[0])
+        {
+            return false;
+        }
+        if(spin_time.getSelectedItemPosition() != config.getSectionExposureTime()[0])
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public void SetScanConfiguration()
+    {
+        int scanType=0;
+        int scanConfigIndex=0;
+        int numRepeat=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        byte numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionExposureTime = new int[5];
+        byte[] EXTRA_DATA = new byte[155];
+        //transfer config name to byte
+        String isoString ="aaa";
+        int name_size = isoString.length();
+        byte[] ConfigNamebytes=isoString.getBytes();
+        for(int i=0;i<name_size;i++)
+        {
+            configName[i] = ConfigNamebytes[i];
+        }
+        scanType = 2;
+        //transfer SerialNumber to byte
+        String SerialNumber = "12345678";
+        byte[] SerialNumberbytes=SerialNumber.getBytes();
+        int SerialNumber_size = SerialNumber.length();
+        for(int i=0;i<SerialNumber_size;i++)
+        {
+            scanConfigSerialNumber[i] = SerialNumberbytes[i];
+        }
+        scanConfigIndex = 255;
+        numSections =(byte) 1;
+        numRepeat = Integer.parseInt(et_aver_scan.getText().toString());
+
+        for(int i=0;i<numSections;i++)
+        {
+            sectionScanType[i] = (byte)spin_scan_method.getSelectedItemPosition();
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWavelengthStartNm[i] =Integer.parseInt(et_spec_start.getText().toString());
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWavelengthEndNm[i] =Integer.parseInt(et_spec_end.getText().toString());
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionNumPatterns[i] =Integer.parseInt(et_res.getText().toString());
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWidthPx[i] = (byte)(spin_scan_width.getSelectedItemPosition()+2);
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionExposureTime[i] =spin_time.getSelectedItemPosition();
+        }
+        dlpSpecScanWriteConfiguration(scanType,scanConfigIndex,numRepeat,scanConfigSerialNumber,configName,numSections,
+                sectionScanType, sectionWidthPx, sectionWavelengthStartNm, sectionWavelengthEndNm, sectionNumPatterns,
+                sectionExposureTime,EXTRA_DATA);
+        SetConfig(EXTRA_DATA);
+    }
+
+    private void SetConfig(byte[]EXTRA_DATA)
+    {
+        //package type - 12: CMD, 34: Data.
+        // If the package type is "CMD", the 2nd byte is the "Set Config to Memory" flag, the 3rd byte is the "Save Config to EEPROM" flag, 4th byte is the total data size.
+        // If the package type is "Data", the 2nd byte indicates the bytes remaining to send and data payload starts from 3rd byte.
+
+        // Prepare and send command type package
+        //CMD
+        byte cmd_data[] = new byte[4];
+        int CMD_TYPE = 12;
+
+        cmd_data[0] = (byte) CMD_TYPE; //cmd_type
+        cmd_data[1] = (byte) 1; //set
+        cmd_data[2] = (byte) 0;//save
+        cmd_data[3] = (byte) 155;//data size
+
+        Intent writescanconfig = new Intent(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG);
+        writescanconfig.putExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE, cmd_data);
+        LocalBroadcastManager.getInstance(mContext).sendBroadcast(writescanconfig);
+
+        //data 瘥活憛?byte header 50byte data--------------------------------------------------
+        int totalBytes = 155;
+        int chunkSize = 18;
+        int DATA_TYPE = 34;
+        int byteToSend = totalBytes;
+        int HEADER_SIZE = 2;
+        for (int i=0; i < (totalBytes/chunkSize + 1); i++)
+        {
+            byte data[] = new byte[20];
+            data[0] = (byte)DATA_TYPE;
+            data[1] = (byte)byteToSend;
+
+            if(byteToSend>=chunkSize)
+            {
+                for(int j=0;j<chunkSize;j++)
+                {
+                    data[HEADER_SIZE+j] = EXTRA_DATA[i*chunkSize + j];
+                }
+                Intent writescanconfig_data = new Intent(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG);
+                writescanconfig_data.putExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE, data);
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(writescanconfig_data);
+            }
+            else
+            {
+                byte last_data[] = new byte[totalBytes%chunkSize + HEADER_SIZE ];
+                last_data[0] = (byte)DATA_TYPE;
+                last_data[1] = (byte)(totalBytes%chunkSize);
+                for(int j=0;j<(totalBytes%chunkSize);j++)
+                {
+                    last_data[HEADER_SIZE+j] = EXTRA_DATA[ totalBytes - (totalBytes%chunkSize) +j];
+                }
+                Intent writescanconfig_data = new Intent(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG);
+                writescanconfig_data.putExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE, last_data);
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(writescanconfig_data);
+            }
+            byteToSend-=chunkSize;
+
+        }
+
+    }
+
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    public class WriteScanConfigStatusReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            calProgress.setVisibility(View.GONE);
+            byte status[] = intent.getByteArrayExtra(NIRScanSDK.RETURN_WRITE_SCAN_CONFIG_STATUS);
+            btn_scan.setClickable(true);
+            if((int)status[0] == 1)
+            {
+                if((int)status[2] == -1 && (int)status[3]==-1)
+                {
+                    Dialog_Pane("Fail","Set configuration fail!");
+                }
+                else
+                {
+                    ReadCurrentScanConfig();
+                }
+            }
+            else if((int)status[0] == -1)
+            {
+                Dialog_Pane("Fail","Set configuration fail!");
+            }
+            else if((int)status[0] == -2)
+            {
+                Dialog_Pane("Fail","Set configuration fail! Hardware not compatible!");
+            }
+            else if((int)status[0] == -3)
+            {
+                Dialog_Pane("Fail","Set configuration fail! Function is currently locked!" );
             }
         }
     }

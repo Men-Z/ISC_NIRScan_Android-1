@@ -3,9 +3,11 @@ package com.isctechnologies.NanoScan;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -14,8 +16,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -155,6 +159,10 @@ public class NewSectionConfigActivity extends Activity {
     int MaxPattern = 0;
     private ArrayList<String>ConfigName = new ArrayList<>();
 
+    private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
+    private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
+    private ProgressBar calProgress;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -167,6 +175,7 @@ public class NewSectionConfigActivity extends Activity {
             ab.setTitle(getString(R.string.adding_configurations));
         }
         ConfigName = ScanConfActivity.ScanConfigName;
+        calProgress = (ProgressBar) findViewById(R.id.calProgress);
         init_EditText_config();
         init_ScrollView();
         init_Button_Section();
@@ -188,7 +197,12 @@ public class NewSectionConfigActivity extends Activity {
         String SerialNum = getIntent().getStringExtra("Serial Number");
         et_serial_num.setText(SerialNum);
         GetMaxPattern(0);
-
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
+    }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
     }
     private void init_text_exposure()
     {
@@ -538,6 +552,7 @@ public class NewSectionConfigActivity extends Activity {
             set_button_color();
             show_ScrollView();
             GetMaxPattern(0);
+            HideAllInputKeyboard();
         }
     };
     private Button.OnClickListener btn_section2_listenser = new Button.OnClickListener()
@@ -549,6 +564,7 @@ public class NewSectionConfigActivity extends Activity {
             set_button_color();
             show_ScrollView();
             GetMaxPattern(1);
+            HideAllInputKeyboard();
         }
     };
     private Button.OnClickListener btn_section3_listenser = new Button.OnClickListener()
@@ -560,6 +576,7 @@ public class NewSectionConfigActivity extends Activity {
             set_button_color();
             show_ScrollView();
             GetMaxPattern(2);
+            HideAllInputKeyboard();
         }
     };
     private Button.OnClickListener btn_section4_listenser = new Button.OnClickListener()
@@ -571,6 +588,7 @@ public class NewSectionConfigActivity extends Activity {
             set_button_color();
             show_ScrollView();
             GetMaxPattern(3);
+            HideAllInputKeyboard();
         }
     };
     private Button.OnClickListener btn_section5_listenser = new Button.OnClickListener()
@@ -582,6 +600,7 @@ public class NewSectionConfigActivity extends Activity {
             set_button_color();
             show_ScrollView();
             GetMaxPattern(4);
+            HideAllInputKeyboard();
         }
     };
     private void show_section_button()
@@ -601,7 +620,6 @@ public class NewSectionConfigActivity extends Activity {
     //total section listener--------------------------------------------------------------------------
     private EditText.OnEditorActionListener total_section_listener = new EditText.OnEditorActionListener()
     {
-
         @Override
         public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
             if (actionId == EditorInfo.IME_ACTION_SEARCH ||
@@ -632,7 +650,6 @@ public class NewSectionConfigActivity extends Activity {
     //total repeat listener--------------------------------------------------------------------------
     private EditText.OnEditorActionListener repeat_listener = new EditText.OnEditorActionListener()
     {
-
         @Override
         public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
             if (actionId == EditorInfo.IME_ACTION_SEARCH ||
@@ -655,7 +672,6 @@ public class NewSectionConfigActivity extends Activity {
     //type   listener---------------------------------------------
     private EditText.OnEditorActionListener section1_type = new EditText.OnEditorActionListener()
     {
-
         @Override
         public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
             if (actionId == EditorInfo.IME_ACTION_SEARCH ||
@@ -1465,6 +1481,22 @@ public class NewSectionConfigActivity extends Activity {
         alertDialog = alertDialogBuilder.create();
         alertDialog.show();
     }
+    private void Save_Fail_Dialog_Pane(String title,String content)
+    {
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
+        alertDialogBuilder.setTitle(title);
+        alertDialogBuilder.setCancelable(false);
+        alertDialogBuilder.setMessage(content);
+
+        alertDialogBuilder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface arg0, int arg1) {
+                alertDialog.dismiss();
+            }
+        });
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
 
     /*
     * Inflate the options menu
@@ -1487,7 +1519,7 @@ public class NewSectionConfigActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_save) {
-            if(checkSaveConfigValue()==false)
+          /*  if(checkSaveConfigValue()==false)
             {
 
             }
@@ -1507,8 +1539,19 @@ public class NewSectionConfigActivity extends Activity {
                 SaveConfig(NIRScanConfigExposureTime);
                 SaveConfig(NIRScanConfigSave);
                 Save_Complete_Dialog_Pane("Configuration Saving","Configuration has been saved to Nano!");
-            }
+            }*/
+            if(checkSaveConfigValue()==false)
+            {
 
+            }
+            else
+            {
+                mMenu.findItem(R.id.action_save).setEnabled(false);
+                saveConfig = true;
+                ScanConfActivity.saveConfig = saveConfig;//notify should refresh scan config list
+                calProgress.setVisibility(View.VISIBLE);
+                CreateScanConfiguration();
+            }
         }
         if (id == android.R.id.home) {
             this.finish();
@@ -1735,5 +1778,192 @@ public class NewSectionConfigActivity extends Activity {
             return false;
         }
         return true;
+    }
+    public void CreateScanConfiguration()
+    {
+        int scanType=0;
+        int scanConfigIndex=0;
+        int numRepeat=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        byte numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionExposureTime = new int[5];
+        byte[] EXTRA_DATA = new byte[155];
+        //transfer config name to byte
+        String isoString = et_name.getText().toString();
+        int name_size = isoString.length();
+        byte[] ConfigNamebytes=isoString.getBytes();
+        for(int i=0;i<name_size;i++)
+        {
+            configName[i] = ConfigNamebytes[i];
+        }
+        scanType = 2;
+        //transfer SerialNumber to byte
+        String SerialNumber = et_serial_num.getText().toString();
+        byte[] SerialNumberbytes=SerialNumber.getBytes();
+        int SerialNumber_size = SerialNumber.length();
+        for(int i=0;i<SerialNumber_size;i++)
+        {
+            scanConfigSerialNumber[i] = SerialNumberbytes[i];
+        }
+        scanConfigIndex = 255;
+        numSections =(byte) Integer.parseInt(et_total_section.getText().toString());
+        numRepeat = Integer.parseInt(et_repeat_add.getText().toString());
+        for(int i=0;i<5;i++)
+        {
+            sectionScanType[i] = (byte)Integer.parseInt(et_type.get(i).getText().toString());
+        }
+        for(int i=0;i<5;i++)
+        {
+            sectionWavelengthStartNm[i] =Integer.parseInt(et_spec_start.get(i).getText().toString());
+        }
+        for(int i=0;i<5;i++)
+        {
+            sectionWavelengthEndNm[i] =Integer.parseInt(et_spec_end.get(i).getText().toString());
+        }
+        for(int i=0;i<5;i++)
+        {
+            sectionNumPatterns[i] =Integer.parseInt(et_res.get(i).getText().toString());
+        }
+        for(int i=0;i<5;i++)
+        {
+            sectionWidthPx[i] = (byte)Integer.parseInt(et_width.get(i).getText().toString());
+        }
+        for(int i=0;i<5;i++)
+        {
+            sectionExposureTime[i] =Integer.parseInt(et_exposure.get(i).getText().toString());
+        }
+        NewScanActivity.dlpSpecScanWriteConfiguration(scanType,scanConfigIndex,numRepeat,scanConfigSerialNumber,configName,numSections,
+                sectionScanType, sectionWidthPx, sectionWavelengthStartNm, sectionWavelengthEndNm, sectionNumPatterns,
+                sectionExposureTime,EXTRA_DATA);
+        SaveConfig(EXTRA_DATA);
+    }
+    private void SaveConfig(byte[]EXTRA_DATA)
+    {
+        //package type - 12: CMD, 34: Data.
+        // If the package type is "CMD", the 2nd byte is the "Set Config to Memory" flag, the 3rd byte is the "Save Config to EEPROM" flag, 4th byte is the total data size.
+        // If the package type is "Data", the 2nd byte indicates the bytes remaining to send and data payload starts from 3rd byte.
+
+        // Prepare and send command type package
+        //CMD
+        byte cmd_data[] = new byte[4];
+        int CMD_TYPE = 12;
+
+        cmd_data[0] = (byte) CMD_TYPE; //cmd_type
+        cmd_data[1] = (byte) 0; //set
+        cmd_data[2] = (byte) 1;//save
+        cmd_data[3] = (byte) 155;//data size
+
+        Intent writescanconfig = new Intent(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG);
+        writescanconfig.putExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE, cmd_data);
+        LocalBroadcastManager.getInstance(mContext).sendBroadcast(writescanconfig);
+
+        //data 每次塞2byte header 50byte data--------------------------------------------------
+        int totalBytes = 155;
+        int chunkSize = 18;
+        int DATA_TYPE = 34;
+        int byteToSend = totalBytes;
+        int HEADER_SIZE = 2;
+        for (int i=0; i < (totalBytes/chunkSize + 1); i++)
+        {
+            byte data[] = new byte[20];
+            data[0] = (byte)DATA_TYPE;
+            data[1] = (byte)byteToSend;
+
+            if(byteToSend>=chunkSize)
+            {
+                for(int j=0;j<chunkSize;j++)
+                {
+                    data[HEADER_SIZE+j] = EXTRA_DATA[i*chunkSize + j];
+                }
+                Intent writescanconfig_data = new Intent(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG);
+                writescanconfig_data.putExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE, data);
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(writescanconfig_data);
+            }
+            else
+            {
+                byte last_data[] = new byte[totalBytes%chunkSize + HEADER_SIZE ];
+                last_data[0] = (byte)DATA_TYPE;
+                last_data[1] = (byte)(totalBytes%chunkSize);
+                for(int j=0;j<(totalBytes%chunkSize);j++)
+                {
+                    last_data[HEADER_SIZE+j] = EXTRA_DATA[ totalBytes - (totalBytes%chunkSize) +j];
+                }
+                Intent writescanconfig_data = new Intent(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG);
+                writescanconfig_data.putExtra(NIRScanSDK.WRITE_SCAN_CONFIG_VALUE, last_data);
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(writescanconfig_data);
+            }
+            byteToSend-=chunkSize;
+
+        }
+
+    }
+
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    public class WriteScanConfigStatusReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            calProgress.setVisibility(View.GONE);
+            mMenu.findItem(R.id.action_save).setEnabled(true);
+            byte status[] = intent.getByteArrayExtra(NIRScanSDK.RETURN_WRITE_SCAN_CONFIG_STATUS);
+            if((int)status[0] == 1)
+            {
+                if((int)status[1] == 1)
+                {
+                    Save_Complete_Dialog_Pane("Configuration Saving","Configuration has been saved to Nano!");
+                }
+                else
+                {
+                    Save_Fail_Dialog_Pane("Fail","Save configuration fail!");
+                }
+            }
+            else if((int)status[0] == -1)
+            {
+                Save_Fail_Dialog_Pane("Fail","Save configuration fail!");
+            }
+            else if((int)status[0] == -2)
+            {
+                Save_Fail_Dialog_Pane("Fail","Save configuration fail! Hardware not compatible!");
+            }
+            else if((int)status[0] == -3)
+            {
+                Save_Fail_Dialog_Pane("Fail","Save configuration fail! Function is currently locked!" );
+            }
+        }
+    }
+    private void HideAllInputKeyboard()
+    {
+        InputMethodManager imm =(InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        for(int i=0;i<section;i++)
+        {
+            imm.hideSoftInputFromWindow(et_type.get(i).getWindowToken(), 0);
+        }
+        for(int i=0;i<section;i++)
+        {
+            imm.hideSoftInputFromWindow(et_width.get(i).getWindowToken(), 0);
+        }
+        for(int i=0;i<section;i++)
+        {
+            imm.hideSoftInputFromWindow(et_spec_start.get(i).getWindowToken(), 0);
+        }
+        for(int i=0;i<section;i++)
+        {
+            imm.hideSoftInputFromWindow(et_spec_end.get(i).getWindowToken(), 0);
+        }
+        for(int i=0;i<section;i++)
+        {
+            imm.hideSoftInputFromWindow(et_res.get(i).getWindowToken(), 0);
+        }
+        for(int i=0;i<section;i++)
+        {
+            imm.hideSoftInputFromWindow(et_exposure.get(i).getWindowToken(), 0);
+        }
     }
 }
