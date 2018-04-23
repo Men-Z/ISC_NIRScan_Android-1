@@ -246,7 +246,8 @@ public class NanoBLEService extends Service {
             } else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_START_SCAN) == 0) {
                 if (debug)
                     Log.d(TAG, "Wrote Notify request for GSDIS_START_SCAN");
-                BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanName.getDescriptor(CCCD_UUID);
+                //BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanName.getDescriptor(CCCD_UUID);
+                BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetSerialScanDataStruct.getDescriptor(CCCD_UUID);
                 mDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 NIRScanSDK.mBluetoothGatt.writeDescriptor(mDescriptor);
             } else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SCAN_NAME) == 0) {
@@ -288,16 +289,17 @@ public class NanoBLEService extends Service {
             } else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_SD_STORED_SCAN_IND_LIST_DATA) == 0) {
                 if (debug)
                     Log.d(TAG, "Wrote Notify request for GSDIS_SD_STORED_SCAN_IND_LIST_DATA");
-                BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify.getDescriptor(CCCD_UUID);
+                //BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify.getDescriptor(CCCD_UUID);
+                BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSCISRetScanConfData.getDescriptor(CCCD_UUID);
                 mDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 NIRScanSDK.mBluetoothGatt.writeDescriptor(mDescriptor);
-            } else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_CLEAR_SCAN) == 0) {
+            } /*else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_CLEAR_SCAN) == 0) {
                 if (debug)
                     Log.d(TAG, "Wrote Notify request for GSDIS_CLEAR_SCAN");
                 BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSCISRetScanConfData.getDescriptor(CCCD_UUID);
                 mDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 NIRScanSDK.mBluetoothGatt.writeDescriptor(mDescriptor);
-            } else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSCIS_RET_SCAN_CONF_DATA) == 0) {
+            }*/ else if (descriptor.getCharacteristic().getUuid().compareTo(NIRScanSDK.NanoGATT.GSCIS_RET_SCAN_CONF_DATA) == 0) {
                 if (debug)
                     Log.d(TAG, "Wrote Notify request for GSCIS_RET_SCAN_CONF_DATA");
                 BluetoothGattDescriptor mDescriptor = NIRScanSDK.NanoGattCharacteristic.mBleGattCharGCISRetSpecCalCoefficients.getDescriptor(CCCD_UUID);

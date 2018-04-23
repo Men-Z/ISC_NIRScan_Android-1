@@ -395,28 +395,28 @@ public class NIRScanSDK {
                         NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanWrite = gattCharacteristic;
                     } else if(gattCharacteristic.getProperties() == 16) {
                         NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify = gattCharacteristic;
-                        gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify, true);
+                       // gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISClearScanNotify, true);
                     }
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_REQ_SCAN_NAME) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqScanName = gattCharacteristic;
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SCAN_NAME) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanName = gattCharacteristic;
-                   // gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanName, true);
+                    gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanName, true);
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_REQ_SCAN_TYPE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqScanType = gattCharacteristic;
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SCAN_TYPE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanType = gattCharacteristic;
-                    //gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanType, true);
+                    gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanType, true);
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_REQ_SCAN_DATE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqScanDate = gattCharacteristic;
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SCAN_DATE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanDate = gattCharacteristic;
-                   // gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanDate, true);
+                    gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetScanDate, true);
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_REQ_PKT_FMT_VER) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqPacketFormatVersion = gattCharacteristic;
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_PKT_FMT_VER) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetPacketFormatVersion = gattCharacteristic;
-                   // gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetPacketFormatVersion, true);
+                    gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetPacketFormatVersion, true);
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_REQ_SER_SCAN_DATA_STRUCT) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqSerialScanDataStruct = gattCharacteristic;
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SER_SCAN_DATA_STRUCT) == 0) {
