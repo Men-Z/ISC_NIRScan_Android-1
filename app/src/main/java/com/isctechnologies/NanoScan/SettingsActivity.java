@@ -104,6 +104,14 @@ public class SettingsActivity extends Activity {
             }
         });
 
+        tv_pref_nano.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //When trying to set a preferred Nano, start the bluetooth scanner so that a device can be chosen
+                startActivity(new Intent(mContext, ScanActivity.class));
+            }
+        });
+
         if(preferredNano == null){
             btn_forget.setEnabled(false);
         }else{
