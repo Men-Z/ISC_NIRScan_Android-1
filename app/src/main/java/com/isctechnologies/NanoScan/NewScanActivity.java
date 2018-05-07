@@ -955,6 +955,7 @@ public class NewScanActivity extends Activity {
         if (id == R.id.action_key) {
             Intent configureIntent = new Intent(mContext, LicenseKey.class);
             startActivity(configureIntent);
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
         }
         if (id == android.R.id.home) {
             this.finish();
