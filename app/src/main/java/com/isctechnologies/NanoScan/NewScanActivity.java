@@ -2140,7 +2140,15 @@ public class NewScanActivity extends Activity {
                     }
                 }
             }, NanoBLEService.SCAN_PERIOD);
-            mBluetoothLeScanner.startScan(mPreferredLeScanCallback);
+            if(mBluetoothLeScanner == null)
+            {
+                notConnectedDialog();
+            }
+            else
+            {
+                mBluetoothLeScanner.startScan(mPreferredLeScanCallback);
+            }
+
         } else {
             mBluetoothLeScanner.stopScan(mPreferredLeScanCallback);
         }
