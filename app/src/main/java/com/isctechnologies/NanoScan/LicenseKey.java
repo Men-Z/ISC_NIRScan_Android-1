@@ -63,7 +63,9 @@ public class LicenseKey extends Activity {
         {
            et_license_key.setText(licensekey);
         }
-        Licensestatusfalg = NewScanActivity.Licensestatusfalg;
+        String avticavateStatus =  SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, null);
+        et_status.setText(avticavateStatus);
+        /*Licensestatusfalg = NewScanActivity.Licensestatusfalg;
         if(Licensestatusfalg)
         {
             et_status.setText("Activated");
@@ -71,7 +73,7 @@ public class LicenseKey extends Activity {
         else
         {
             et_status.setText("Function is locked.");
-        }
+        }*/
     }
 
 
@@ -235,10 +237,12 @@ public class LicenseKey extends Activity {
             {
                 et_status.setText("Activated");
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, et_license_key.getText().toString());
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
             }
             else
             {
                 et_status.setText("Function is locked.");
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
             }
         }
     }

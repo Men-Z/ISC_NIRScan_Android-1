@@ -49,7 +49,8 @@ public class SettingsManager {
         public static final String continuousScan = "continuousScan";
         public static final String scanConfiguration = "scanConfiguration";
         public static final String preferredDevice = "preferredDevice";
-        public static final String licensekey = "";
+        public static final String licensekey = "licensekey";
+        public static final String Activacatestatus = "Function is locked.";
 
         public SharedPreferencesKeys() {
         }

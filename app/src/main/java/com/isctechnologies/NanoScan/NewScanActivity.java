@@ -3260,11 +3260,12 @@ public class NewScanActivity extends Activity {
                 Licensestatusfalg = true;
                 mMenu.findItem(R.id.action_settings).setEnabled(true);
                 mMenu.findItem(R.id.action_key).setEnabled(true);
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
+
             }
             else
             {
                  String licensekey = SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, null);
-                // licensekey="aaa";
                 if(licensekey!=null)
                 {
                     calProgress.setVisibility(View.VISIBLE);
@@ -3275,6 +3276,7 @@ public class NewScanActivity extends Activity {
                     Dialog_Pane("Unlock device","Some functions are locked.");
                     mMenu.findItem(R.id.action_settings).setEnabled(true);
                     mMenu.findItem(R.id.action_key).setEnabled(true);
+                    SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
                 }
             }
         }
@@ -3332,10 +3334,12 @@ public class NewScanActivity extends Activity {
             {
                 Dialog_Pane("Device Activated","Device advanced functions are all unlocked.");
                 Licensestatusfalg = true;
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
             }
             else
             {
                 Dialog_Pane("Unlock device","Some functions are locked.");
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
             }
         }
     }
