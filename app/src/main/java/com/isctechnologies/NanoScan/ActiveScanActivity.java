@@ -37,6 +37,9 @@ public class ActiveScanActivity extends Activity {
     private final IntentFilter disconnFilter = new IntentFilter(NIRScanSDK.ACTION_GATT_DISCONNECTED);
     private boolean showActiveconfigpage = false;
     ArrayList<String> exposure_time_vlaue = new ArrayList<>();
+    String widthnm[] ={"","","2.34","3.51","4.68","5.85","7.03","8.20","9.37","10.54","11.71","12.88","14.05","15.22","16.39","17.56","18.74"
+    ,"19.91","21.08","22.25","23.42","24.59","25.76","26.93","28.10","29.27","30.44","31.62","32.79","33.96","35.13","36.30","37.47","38.64","39.81"
+    ,"40.98","42.15","43.33","44.50","45.67","46.84","48.01","49.18","50.35","51.52","52.69","53.86","55.04","56.21","57.38","58.55","59.72","60.89"};
 
     //Spectrum C library call. Only the activity by this name is allowed call this function
     //public native Object dlpSpecScanReadConfiguration(byte[] data);
@@ -77,7 +80,7 @@ public class ActiveScanActivity extends Activity {
                         (activeConf.getSectionWavelengthStartNm()[i] & 0xFFFF),
                         (activeConf.getSectionWavelengthEndNm()[i] & 0xFFFF),
                         activeConf.getSectionNumPatterns()[i] & 0x0FFF,
-                        activeConf.getSectionNumRepeats()[i],
+                         activeConf.getSectionNumRepeats()[i],
                         activeConf.getSectionExposureTime()[i]  & 0x000F));
             }
             Log.i("__ACTIVE_CONF","Setting slew conf adapter");
@@ -195,10 +198,12 @@ public class ActiveScanActivity extends Activity {
 
             final NIRScanSDK.ScanConfiguration config = getItem(position);
             if (config != null) {
+                int widthindex = (int)config.getWidthPx();
                 viewHolder.scanType.setText(config.getConfigName());
                 viewHolder.rangeStart.setText(getString(R.string.range_start_value, config.getWavelengthStartNm()));
                 viewHolder.rangeEnd.setText(getString(R.string.range_end_value, config.getWavelengthEndNm()));
-                viewHolder.width.setText(getString(R.string.width_value, config.getWidthPx()));
+                //viewHolder.width.setText(widthnm[widthindex] +getString(R.string.width_value, config.getWidthPx()));
+                viewHolder.width.setText(widthnm[widthindex] + " nm");
                 viewHolder.patterns.setText(getString(R.string.patterns_value, config.getNumPatterns()));
                 viewHolder.repeats.setText(getString(R.string.repeats_value, config.getNumRepeats()));
                 viewHolder.serial.setText(config.getScanConfigSerialNumber());
@@ -243,9 +248,11 @@ public class ActiveScanActivity extends Activity {
 
             final NIRScanSDK.SlewScanSection config = getItem(position);
             if (config != null) {
+                int widthindex = (int)config.getWidthPx();
                 viewHolder.rangeStart.setText(getString(R.string.range_start_value, config.getWavelengthStartNm()));
                 viewHolder.rangeEnd.setText(getString(R.string.range_end_value, config.getWavelengthEndNm()));
-                viewHolder.width.setText(getString(R.string.width_value, config.getWidthPx()));
+                //viewHolder.width.setText( getString(R.string.width_value, config.getWidthPx()));
+                viewHolder.width.setText(widthnm[widthindex] + " nm");
                 viewHolder.patterns.setText(getString(R.string.patterns_value, config.getNumPatterns()));
                 viewHolder.repeats.setText(getString(R.string.repeats_value, config.getNumRepeats()));
                 int index = config.getExposureTime();
