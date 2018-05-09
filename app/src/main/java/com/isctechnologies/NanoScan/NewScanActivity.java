@@ -594,6 +594,15 @@ public class NewScanActivity extends Activity {
                 btn_quickset.setBackgroundColor(0xFF0099CC);
                 btn_maintain.setBackgroundColor(0xFF0099CC);
                 function = 1;
+                //----------------------------------------------------
+                if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.").contains("Activated"))
+                {
+                    openFunction();
+                }
+                else
+                {
+                    closeFunction();
+                }
             }
         });
         btn_normal.setClickable(false);
@@ -698,7 +707,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunReadActivateStatusReceiver, RetrunReadActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
+        //LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
 
         //----------------------------------------------------------------
     }
@@ -884,8 +893,16 @@ public class NewScanActivity extends Activity {
         }
         else
         {
-
+            if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, null).contains("Activated"))
+            {
+                openFunction();
+            }
+            else
+            {
+                closeFunction();
+            }
         }
+        //------------------------------------------
 
     }
 
@@ -2337,7 +2354,15 @@ public class NewScanActivity extends Activity {
                     NIRScanSDK.requestSpectrumCalCoefficients();
                     downloadspecFlag = true;
                 }
-
+                //-----------------------------------------------------
+                if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.").contains("Activated"))
+                {
+                    openFunction();
+                }
+                else
+                {
+                    closeFunction();
+                }
             }
 
         }
@@ -3269,7 +3294,7 @@ public class NewScanActivity extends Activity {
                 mMenu.findItem(R.id.action_settings).setEnabled(true);
                 mMenu.findItem(R.id.action_key).setEnabled(true);
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
-
+                openFunction();
             }
             else
             {
@@ -3285,6 +3310,7 @@ public class NewScanActivity extends Activity {
                     mMenu.findItem(R.id.action_settings).setEnabled(true);
                     mMenu.findItem(R.id.action_key).setEnabled(true);
                     SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
+                    closeFunction();
                 }
             }
         }
@@ -3343,11 +3369,13 @@ public class NewScanActivity extends Activity {
                 Dialog_Pane("Device Activated","Device advanced functions are all unlocked.");
                 Licensestatusfalg = true;
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
+                openFunction();
             }
             else
             {
                 Dialog_Pane("Unlock device","Some functions are locked.");
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
+                closeFunction();
             }
         }
     }
@@ -3603,5 +3631,23 @@ public class NewScanActivity extends Activity {
                 Dialog_Pane("Fail","Set configuration fail! Function is currently locked!" );
             }
         }
+    }
+    private void openFunction()
+    {
+        btn_quickset.setClickable(true);
+        btn_manual.setClickable(true);
+        btn_maintain.setClickable(true);
+        btn_manual.setBackgroundColor(0xFF0099CC);
+        btn_quickset.setBackgroundColor(0xFF0099CC);
+        btn_maintain.setBackgroundColor(0xFF0099CC);
+    }
+    private void closeFunction()
+    {
+        btn_quickset.setClickable(false);
+        btn_manual.setClickable(false);
+        btn_maintain.setClickable(false);
+        btn_manual.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
+        btn_quickset.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
+        btn_maintain.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
     }
 }

@@ -608,7 +608,7 @@ public class NIRScanSDK {
     public static void writeScanConfig(byte[] index) {
 
         try {
-            Thread.sleep(20);
+            Thread.sleep(200);
         }catch (Exception e)
         {
 

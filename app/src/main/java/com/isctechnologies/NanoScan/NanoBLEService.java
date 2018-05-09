@@ -999,7 +999,7 @@ public class NanoBLEService extends Service {
             } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GSDIS_WRITE_SCANCONFIG_DATA)) {
                 if (debug)
                     Log.d(TAG, "Write Scan config data! status=" + status);
-                NIRScanSDK.ReadScanConfigDataStatus();
+              //  NIRScanSDK.ReadScanConfigDataStatus();
             } else {
                 if (debug)
                     Log.d(TAG, "Unknown characteristic" + characteristic.getUuid());

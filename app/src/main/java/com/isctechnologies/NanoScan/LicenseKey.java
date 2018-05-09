@@ -58,12 +58,12 @@ public class LicenseKey extends Activity {
         btn_submit.setOnClickListener(ButtonListenser);
         btn_clear.setOnClickListener(ButtonListenser);
 
-        String licensekey = SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, null);
+        String licensekey = SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, "");
         if(licensekey!=null)
         {
            et_license_key.setText(licensekey);
         }
-        String avticavateStatus =  SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, null);
+        String avticavateStatus =  SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
         et_status.setText(avticavateStatus);
         /*Licensestatusfalg = NewScanActivity.Licensestatusfalg;
         if(Licensestatusfalg)
