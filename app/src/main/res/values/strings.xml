@@ -38,8 +38,8 @@
 
      <string name="temperature">Temperature</string>
      <string name="spatial_freq">Spatial Freq</string>
-     <string name="set_nano">Set My Nano</string>
-     <string name="clear_nano">Clear My Nano</string>
+     <string name="set_nano">Set My Device</string>
+     <string name="clear_nano">Clear My Device</string>
      <string name="go">Go!</string>
      <string name="forget">Forget</string>
 
@@ -153,7 +153,7 @@
 
      <string name="dl_ref_cal">Downloading Ref Cal</string>
      <string name="dl_cal_matrix">Downloading Cal Matrix</string>
-     <string name="select_nano">Select Nano</string>
+     <string name="select_nano">Select Device</string>
      <string name="nano_confirmation_title">Are You Sure?</string>
      <string name="nano_confirmation_msg">Are you sure you want set the Nano with MAC address: %1$s, as your primary device?</string>
      <string name="nano_forget_msg">Are you sure you want clear the Nano with MAC address: %1$s, as your primary device?</string>
