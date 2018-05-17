@@ -1789,7 +1789,7 @@ public class NewScanActivity extends Activity {
             if (ab != null) {
 
                 if (filePrefix.getText().toString().equals("")) {
-                    ab.setTitle("Nano" + ts);
+                    ab.setTitle("ISC" + ts);
                 } else {
                     ab.setTitle(filePrefix.getText().toString() + ts);
                 }
