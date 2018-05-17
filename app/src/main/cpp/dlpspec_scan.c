@@ -379,7 +379,7 @@ DLPSPEC_ERR_CODE dlpspec_scan_read_configuration(void *pBuf, const size_t bufSiz
 		pSectBuf = (void *)(pHeadBuf + size);
 		ret_val = dlpspec_deserialize(pSectBuf, size1, SLEW_CFG_SECT_TYPE);
 
-		memcpy(&pCfg->slewScanCfg.section[0], pSectBuf, 
+        memmove(&pCfg->slewScanCfg.section[0], pSectBuf,
 				sizeof(slewScanSection)*SLEW_SCAN_MAX_SECTIONS);
 	}
 
@@ -581,18 +581,18 @@ DLPSPEC_ERR_CODE dlpspec_scan_read_data(void *pBuf, const size_t bufSize)
 		if(ret_val != DLPSPEC_PASS)
 			return ret_val;
 
-        memcpy(&pData->slew_data.slewCfg.head, pHeadBuf, sizeof(struct slewScanConfigHead));
+        memmove(&pData->slew_data.slewCfg.head, pHeadBuf, sizeof(struct slewScanConfigHead));
 
 		pSectBuf = (void *)(pHeadBuf + size_cfg_head);
 		ret_val = dlpspec_deserialize(pSectBuf, size_sect, SLEW_CFG_SECT_TYPE);
 
-		memcpy(&pData->slew_data.slewCfg.section[0], pSectBuf, 
+        memmove(&pData->slew_data.slewCfg.section[0], pSectBuf,
 				sizeof(slewScanSection)*SLEW_SCAN_MAX_SECTIONS);
 
 		pADCdataBuf = (void *)(pSectBuf + size_sect);
 		ret_val = dlpspec_deserialize(pADCdataBuf, size_adc_data, 
 				SLEW_DATA_ADC_TYPE);
-		memcpy(pData->slew_data.adc_data, pADCdataBuf, sizeof(uint32_t)*ADC_DATA_LEN);
+        memmove(pData->slew_data.adc_data, pADCdataBuf, sizeof(uint32_t)*ADC_DATA_LEN);
 		
 	}
 
@@ -667,7 +667,7 @@ DLPSPEC_ERR_CODE dlpspec_scan_interpret(const void *pBuf, const size_t bufSize,
     if(pCopyBuff == NULL)
         return (ERR_DLPSPEC_INSUFFICIENT_MEM);
 
-    memcpy(pCopyBuff, pBuf, bufSize);
+    memmove(pCopyBuff, pBuf, bufSize);
 
     ret_val = dlpspec_scan_read_data(pCopyBuff, bufSize);
     if(ret_val < 0)
@@ -943,7 +943,7 @@ DLPSPEC_ERR_CODE dlpspec_scan_interpReference(const void *pRefCal,
     pDesRefScanData = (scanData *)malloc(calSize);
     if (pDesRefScanData == NULL)
         return (ERR_DLPSPEC_INSUFFICIENT_MEM);
-    memcpy(pDesRefScanData,pRefCal, calSize);
+    memmove(pDesRefScanData,pRefCal, calSize);
 
     pDesRefCalMatrix = (refCalMatrix *)malloc(matrixSize);
     if (pDesRefCalMatrix == NULL)
@@ -951,7 +951,7 @@ DLPSPEC_ERR_CODE dlpspec_scan_interpReference(const void *pRefCal,
 		ret_val = ERR_DLPSPEC_INSUFFICIENT_MEM;
         goto cleanup_and_exit;
 	}
-    memcpy(pDesRefCalMatrix, pMatrix, matrixSize);
+    memmove(pDesRefCalMatrix, pMatrix, matrixSize);
     
     ret_val = dlpspec_deserialize((void *)pDesRefCalMatrix, matrixSize, 
 			REF_CAL_MATRIX_TYPE);
