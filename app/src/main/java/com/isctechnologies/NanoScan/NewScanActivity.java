@@ -146,7 +146,7 @@ public class NewScanActivity extends Activity {
     private ProgressBar calProgress;
     private NIRScanSDK.ScanResults results;
     private EditText filePrefix;
-    private ToggleButton btn_os;
+   // private ToggleButton btn_os;
     private ToggleButton btn_continuous;
     private Button btn_scan;
     private EditText et_normal_repeat;
@@ -340,7 +340,7 @@ public class NewScanActivity extends Activity {
 
         //Set up UI elements and event handlers
         filePrefix = (EditText) findViewById(R.id.et_prefix);
-        btn_os = (ToggleButton) findViewById(R.id.btn_saveOS);
+        //btn_os = (ToggleButton) findViewById(R.id.btn_saveOS);
         btn_continuous = (ToggleButton) findViewById(R.id.btn_continuous);
         et_normal_interval_time = (EditText) findViewById(R.id.et_normal_interval_time);
         et_normal_repeat = (EditText) findViewById(R.id.et_normal_repeat);
@@ -405,7 +405,7 @@ public class NewScanActivity extends Activity {
         //maintain--------------------------------------------------------------------------
         btn_reference = (ToggleButton)findViewById(R.id.btn_reference);
         //-----------------------------------------------------------------------------------------------------------------
-        btn_os.setChecked(SettingsManager.getBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.saveOS, false));
+        //btn_os.setChecked(SettingsManager.getBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.saveOS, false));
         btn_continuous.setChecked(SettingsManager.getBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.continuousScan, false));
         btn_lamp.setEnabled(false);
         et_repead.setEnabled(false);
@@ -932,7 +932,7 @@ public class NewScanActivity extends Activity {
 
         mHandler.removeCallbacksAndMessages(null);
 
-        SettingsManager.storeBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.saveOS, btn_os.isChecked());
+        //SettingsManager.storeBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.saveOS, btn_os.isChecked());
         SettingsManager.storeBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.continuousScan, btn_continuous.isChecked());
     }
 
@@ -1796,7 +1796,7 @@ public class NewScanActivity extends Activity {
                 ab.setSelectedNavigationItem(0);
             }
 
-            boolean saveOS = btn_os.isChecked();
+           // boolean saveOS = btn_os.isChecked();
             boolean continuous = false;
             if(function == 1)
             {
@@ -1813,10 +1813,10 @@ public class NewScanActivity extends Activity {
             }
             else
             {
-                //writeCSV(ts, results, saveOS);
-                writeCSV(filetsName, results, saveOS);
-                //writeCSVDict(ts, scanType, scanDate, String.valueOf(minWavelength), String.valueOf(maxWavelength), String.valueOf(results.getLength()), String.valueOf(results.getLength()), "1", "2.00", saveOS);
-                writeCSVDict(filetsName, scanType, ts, String.valueOf(minWavelength), String.valueOf(maxWavelength), String.valueOf(results.getLength()), String.valueOf(results.getLength()), Integer.toString(numberOfaverage), Float.toString(mesureTime), saveOS,slew);
+
+              //  writeCSV(filetsName, results, saveOS);
+
+             //   writeCSVDict(filetsName, scanType, ts, String.valueOf(minWavelength), String.valueOf(maxWavelength), String.valueOf(results.getLength()), String.valueOf(results.getLength()), Integer.toString(numberOfaverage), Float.toString(mesureTime), saveOS,slew);
 
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
             }
@@ -2786,8 +2786,8 @@ public class NewScanActivity extends Activity {
         //normal------------------------------------------------
         LinearLayout layout = (LinearLayout) findViewById(R.id.ll_prefix);
         DisableLinearComponet(layout);
-        layout = (LinearLayout) findViewById(R.id.ll_os);
-        DisableLinearComponet(layout);
+       // layout = (LinearLayout) findViewById(R.id.ll_os);
+       // DisableLinearComponet(layout);
         layout = (LinearLayout) findViewById(R.id.ll_continuous);
         DisableLinearComponet(layout);
         layout = (LinearLayout) findViewById(R.id.ly_normal_interval_time);
@@ -2879,8 +2879,8 @@ public class NewScanActivity extends Activity {
         //normal------------------------------------------
         LinearLayout layout = (LinearLayout) findViewById(R.id.ll_prefix);
         EnableLinearComponet(layout);
-        layout = (LinearLayout) findViewById(R.id.ll_os);
-        EnableLinearComponet(layout);
+       // layout = (LinearLayout) findViewById(R.id.ll_os);
+       // EnableLinearComponet(layout);
         layout = (LinearLayout) findViewById(R.id.ll_continuous);
         EnableLinearComponet(layout);
         layout = (LinearLayout) findViewById(R.id.ly_normal_interval_time);

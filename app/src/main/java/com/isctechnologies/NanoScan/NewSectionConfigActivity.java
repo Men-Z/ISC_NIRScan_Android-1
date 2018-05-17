@@ -1917,7 +1917,7 @@ public class NewSectionConfigActivity extends Activity {
             {
                 if((int)status[1] == 1)
                 {
-                    Save_Complete_Dialog_Pane("Configuration Saving","Configuration has been saved to Nano!");
+                    Save_Complete_Dialog_Pane("Configuration Saving","Configuration has been saved to device!");
                 }
                 else
                 {
