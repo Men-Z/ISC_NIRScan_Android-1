@@ -69,7 +69,7 @@ public class ScanActivity extends Activity {
         lv_nanoDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                confirmationDialog(nanoDeviceList.get(i).getNanoMac());
+                confirmationDialog(nanoDeviceList.get(i).getNanoMac(),nanoDeviceList.get(i).getNanoName());
             }
         });
 
@@ -83,7 +83,7 @@ public class ScanActivity extends Activity {
      *
      * @param mac MAC address of Nano
      */
-    public void confirmationDialog(String mac) {
+    public void confirmationDialog(String mac, final String name) {
 
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
         final String deviceMac = mac;
@@ -95,6 +95,7 @@ public class ScanActivity extends Activity {
             public void onClick(DialogInterface arg0, int arg1) {
                 alertDialog.dismiss();
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDevice, deviceMac);
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDeviceModel,name);
                 finish();
             }
         });

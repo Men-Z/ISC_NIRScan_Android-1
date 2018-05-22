@@ -129,7 +129,8 @@ public class SettingsActivity extends Activity {
         //Update set button and field based on whether a preferred nano has been set or not
         if (preferredNano != null) {
             btn_set.setVisibility(View.INVISIBLE);
-            tv_pref_nano.setText(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDevice, null));
+            //tv_pref_nano.setText(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDevice, null));
+            tv_pref_nano.setText(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDeviceModel, null));
             tv_pref_nano.setVisibility(View.VISIBLE);
         } else {
             btn_set.setVisibility(View.VISIBLE);
@@ -191,6 +192,7 @@ public class SettingsActivity extends Activity {
             public void onClick(DialogInterface arg0, int arg1) {
                 alertDialog.dismiss();
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDevice, null);
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.preferredDeviceModel, null);
                 btn_set.setVisibility(View.VISIBLE);
                 tv_pref_nano.setVisibility(View.INVISIBLE);
                 btn_forget.setEnabled(false);
