@@ -1828,12 +1828,12 @@ public class NewScanActivity extends Activity {
             if(function == 1)
             {
                 interval_time = Integer.parseInt(et_normal_interval_time.getText().toString());
-                repeat = Integer.parseInt(et_normal_repeat.getText().toString());
+                repeat = Integer.parseInt(et_normal_repeat.getText().toString()) -1;//-1 want to match scan count
             }
             else
             {
                 interval_time = Integer.parseInt(scan_interval_time.getText().toString());
-                repeat = Integer.parseInt(et_repeat_quick.getText().toString());
+                repeat = Integer.parseInt(et_repeat_quick.getText().toString()) -1;//-1 want to match scan count
             }
 
             if(show_finish_continous_dialog == true)
