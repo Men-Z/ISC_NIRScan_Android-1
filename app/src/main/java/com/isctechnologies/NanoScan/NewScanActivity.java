@@ -1770,14 +1770,14 @@ public class NewScanActivity extends Activity {
                 }
             }
             //number of average----------------------------------------------------------------------------------------------
-            if(function==3 && btn_scan_mode.isChecked())
+         /*   if(function==3 && btn_scan_mode.isChecked())
             {
                 numberOfaverage = Integer.parseInt(et_repead.getText().toString());
             }
             else
             {
                 numberOfaverage =  activeConf.getSectionNumRepeats()[0];
-            }
+            }*/
 
             float mesureTime =(float) (EndTime - startTime)/1000;
 
