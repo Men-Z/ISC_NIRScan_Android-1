@@ -253,6 +253,10 @@ public class NewScanActivity extends Activity {
     public static Boolean Licensestatusfalg = false;
     Boolean downloadspecFlag = false;
 
+    Boolean isScan = false;
+    int tabPosition = 0;
+
+
     private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
     private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
 
@@ -315,7 +319,27 @@ public class NewScanActivity extends Activity {
             ActionBar.TabListener tl = new ActionBar.TabListener() {
                 @Override
                 public void onTabSelected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-                    mViewPager.setCurrentItem(tab.getPosition());
+                    //1.if select tab0 then scan, onTabSelected can't invoke. But select other tab can invoke.
+
+                    if(isScan)
+                    {
+                        if(tabPosition == 0) //2. select tab0 then scan. choose tab1, 這時iscan -true但tabPosition會等於0會造成page錯誤，
+                        //因此如果tabPosition是0的時候， 會選擇做mViewPager.setCurrentItem(tab.getPosition());看當下的狀態
+                        {
+                            mViewPager.setCurrentItem(tab.getPosition());
+                        }
+                        else//tabPosition 在做完scan之後會先記錄當下的tab再做更新
+                        {
+                            mViewPager.setCurrentItem(tabPosition);
+                        }
+
+                        isScan = false;
+                    }
+                    else
+                    {
+                        mViewPager.setCurrentItem(tab.getPosition());
+                    }
+
                 }
 
                 @Override
@@ -1735,7 +1759,8 @@ public class NewScanActivity extends Activity {
             {
                 maxReference=1000;
             }
-
+            isScan = true;
+            tabPosition = mViewPager.getCurrentItem();
             mViewPager.setAdapter(mViewPager.getAdapter());
             mViewPager.invalidate();
 
