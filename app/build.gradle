@@ -7,11 +7,11 @@ android {
     buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "com.isctechnologies.ISCScan"
+        applicationId "com.isctechnologies.ISCScanNano"
         minSdkVersion 21
         targetSdkVersion 22
-        versionCode 5
-        versionName "2.5"
+        versionCode 7
+        versionName "2.7"
         externalNativeBuild {
             cmake {
                 cppFlags ""
