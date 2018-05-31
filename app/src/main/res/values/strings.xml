@@ -168,7 +168,7 @@
      <string name="scan_mode">Manual Scan Mode</string>
      <string name="lamp">Turn-On Lamp</string>
      <string name="pga">Set Scan PGA</string>
-     <string name="repeat">Set Scan Repeats</string>
+     <string name="repeat">Continuous Scan Repeats</string>
      <string name="scan_method">Scan Method</string>
      <string name="spec_start">Spectral Start (nm)</string>
      <string name="spec_end">Spectral End (nm)</string>

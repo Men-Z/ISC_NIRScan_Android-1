@@ -68,4 +68,12 @@ public class ScanListMain  extends Activity {
             startActivity(settingsIntent);
         }
     };
+
+    public static StoreCalibration storeCalibration = new StoreCalibration();
+    public static class StoreCalibration
+    {
+        String device;
+        byte[] storrefCoeff;
+        byte[] storerefMatrix;
+    }
 }

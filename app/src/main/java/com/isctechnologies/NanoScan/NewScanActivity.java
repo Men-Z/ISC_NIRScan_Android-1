@@ -1919,6 +1919,10 @@ public class NewScanActivity extends Activity {
             refCal.add(new NIRScanSDK.ReferenceCalibration(refCoeff, refMatrix));
             NIRScanSDK.ReferenceCalibration.writeRefCalFile(mContext, refCal);
             calProgress.setVisibility(View.GONE);
+            //------------------------------------------------------------------
+            ScanListMain.storeCalibration.device = preferredDevice;
+            ScanListMain.storeCalibration.storrefCoeff = refCoeff;
+            ScanListMain.storeCalibration.storerefMatrix = refMatrix;
         }
     }
 
@@ -1941,7 +1945,21 @@ public class NewScanActivity extends Activity {
     public class notifyCompleteReceiver extends BroadcastReceiver {
 
         public void onReceive(Context context, Intent intent) {
-            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SET_TIME));
+            if(preferredDevice.equals(ScanListMain.storeCalibration.device))
+            {
+                byte[] refCoeff = ScanListMain.storeCalibration.storrefCoeff;
+                byte[] refMatrix = ScanListMain.storeCalibration.storerefMatrix;
+                ArrayList<NIRScanSDK.ReferenceCalibration> refCal = new ArrayList<>();
+                refCal.add(new NIRScanSDK.ReferenceCalibration(refCoeff, refMatrix));
+                NIRScanSDK.ReferenceCalibration.writeRefCalFile(mContext, refCal);
+                calProgress.setVisibility(View.INVISIBLE);
+                barProgressDialog = new ProgressDialog(NewScanActivity.this);
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_ACTIVE_CONF));
+            }
+            else
+            {
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SET_TIME));
+            }
         }
     }
 
