@@ -5,6 +5,10 @@
 
 Copyright (c) 2018, InnoSpectra Corporation, All rights reserved.
 
+# License - Texas Instruments
+
+Refer to "DLP_Spectrum_Library_SLA.rtf"
+
 # License - KS Technologies
 
 Software License Agreement (BSD License)
