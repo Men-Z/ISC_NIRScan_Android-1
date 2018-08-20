@@ -91,6 +91,7 @@ public class NanoBLEService extends Service {
     private boolean activeConfRequested = false;
 
     private static final boolean debug = true;
+    Boolean getbattery = false;
 
     public NanoBLEService() {
     }
@@ -140,6 +141,7 @@ public class NanoBLEService extends Service {
     private static BroadcastReceiver mWriteScanConfigReceiver;
     private static BroadcastReceiver mReadActivateStateReceiver;
     private static BroadcastReceiver mUUIDRequestReceiver;
+    private static BroadcastReceiver mBatteryRequestReceiver;
 
     public static final String ACTION_SCAN_STARTED = "com.isctechnologies.NanoScan.bluetooth.service.ACTION_SCAN_STARTED";
 
@@ -382,7 +384,18 @@ public class NanoBLEService extends Service {
                     if (debug)
                         Log.d(TAG, "batt level:" + stringBuilder.toString());
                     battLevel = data[0];
-                    NIRScanSDK.getTemp();
+                    if(getbattery)
+                    {
+                        Intent sendActiveConfIntent = new Intent(NIRScanSDK.SEND_BATTERY);
+                        sendActiveConfIntent.putExtra(NIRScanSDK.EXTRA_BATTERY, battLevel);
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(sendActiveConfIntent);
+                        Log.d(TAG, "aaaaaaa");
+                    }
+                    else
+                    {
+                        NIRScanSDK.getTemp();
+                    }
+
                 } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GGIS_TEMP_MEASUREMENT)) {
                     byte[] data = characteristic.getValue();
                     final StringBuilder stringBuilder = new StringBuilder(data.length);
@@ -477,7 +490,6 @@ public class NanoBLEService extends Service {
                     Intent sendActiveConfIntent = new Intent(NIRScanSDK.SEND_DEVICE_UUID);
                     sendActiveConfIntent.putExtra(NIRScanSDK.EXTRA_DEVICE_UUID, data);
                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(sendActiveConfIntent);
-                    Log.d(TAG, "aaaaaaa");
                 } else {
                     if (debug)
                         Log.d(TAG, "Read from unknown characteristic:" + characteristic.getUuid().toString());
@@ -1305,8 +1317,20 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (intent != null) {
                     if (debug)
-                        Log.d(TAG, "Requesting Device Info");
+                        Log.d(TAG, "Requesting UUID Info");
                     NIRScanSDK.getUUID();
+                }
+            }
+        };
+
+        mBatteryRequestReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null) {
+                    if (debug)
+                        Log.d(TAG, "Requesting Device Info");
+                    getbattery = true;
+                    NIRScanSDK.getBatteryLevel();
                 }
             }
         };
@@ -1317,6 +1341,7 @@ public class NanoBLEService extends Service {
                 if (intent != null) {
                     if (debug)
                         Log.d(TAG, "Requesting Device Status");
+                    getbattery = false;
                     NIRScanSDK.getBatteryLevel();
                 }
             }
@@ -1633,6 +1658,7 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mWriteScanConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_ACTIVATE_STATE));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mUUIDRequestReceiver, new IntentFilter(NIRScanSDK.GET_UUID));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mBatteryRequestReceiver, new IntentFilter(NIRScanSDK.GET_BATTERY));
 
     }
 
@@ -1667,6 +1693,7 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadCurrentConfigReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mWriteScanConfigReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadActivateStateReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mBatteryRequestReceiver);
     }
 
     @Override

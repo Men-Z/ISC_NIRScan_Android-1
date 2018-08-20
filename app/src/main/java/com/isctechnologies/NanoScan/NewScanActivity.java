@@ -140,6 +140,7 @@ public class NewScanActivity extends Activity {
     private final BroadcastReceiver ReturnCurrentScanConfigurationDataReceiver = new ReturnCurrentScanConfigurationDataReceiver();
     private final BroadcastReceiver mInfoReceiver = new mInfoReceiver();
     private final BroadcastReceiver getUUIDReceiver = new getUUIDReceiver();
+    private final BroadcastReceiver getBatteryReceiver = new getBatteryReceiver();
 
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(NIRScanSDK.SCAN_DATA);
@@ -746,6 +747,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(mInfoReceiver, new IntentFilter(NIRScanSDK.ACTION_INFO));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(getUUIDReceiver, new IntentFilter(NIRScanSDK.SEND_DEVICE_UUID));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(getBatteryReceiver, new IntentFilter(NIRScanSDK.SEND_BATTERY));
         //LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
 
         //----------------------------------------------------------------
@@ -969,6 +971,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mInfoReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(getUUIDReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(getBatteryReceiver);
 
         mHandler.removeCallbacksAndMessages(null);
 
@@ -1671,6 +1674,10 @@ public class NewScanActivity extends Activity {
     /**
      * Custom receiver for handling scan data and setting up the graphs properly
      */
+    boolean continuous = false;
+    byte[] scanData;
+    NIRScanSDK.ReferenceCalibration ref;
+    String filetsName;
     public class scanDataReadyReceiver extends BroadcastReceiver {
 
         public void onReceive(Context context, Intent intent) {
@@ -1678,7 +1685,7 @@ public class NewScanActivity extends Activity {
             btn_scan.setText(getString(R.string.scan));
             EnableAllComponent();
             Disable_Stop_Continous_button();
-            byte[] scanData = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA);
+            scanData = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA);
 
             String scanType = intent.getStringExtra(NIRScanSDK.EXTRA_SCAN_TYPE);
             /*
@@ -1693,7 +1700,7 @@ public class NewScanActivity extends Activity {
             */
             String scanDate = intent.getStringExtra(NIRScanSDK.EXTRA_SCAN_DATE);
 
-            NIRScanSDK.ReferenceCalibration ref = NIRScanSDK.ReferenceCalibration.currentCalibration.get(0);
+            ref = NIRScanSDK.ReferenceCalibration.currentCalibration.get(0);
             //---------------------------------------------------------------------------------------------------------
             double[] wavelength = new double[700];
             int[] intensity = new int[700];
@@ -1825,7 +1832,7 @@ public class NewScanActivity extends Activity {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
             SimpleDateFormat filesimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault());
             String ts = simpleDateFormat.format(new Date());
-            String filetsName = filesimpleDateFormat.format(new Date());
+            filetsName = filesimpleDateFormat.format(new Date());
             ActionBar ab = getActionBar();
             if (ab != null) {
 
@@ -1838,7 +1845,7 @@ public class NewScanActivity extends Activity {
             }
 
            // boolean saveOS = btn_os.isChecked();
-            boolean continuous = false;
+
             if(function == 1)
             {
                 continuous = btn_continuous.isChecked();
@@ -1861,55 +1868,59 @@ public class NewScanActivity extends Activity {
 
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
             }
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_BATTERY));
+            //ScanDataResult();
+        }
+    }
+    private void ScanDataResult()
+    {
+        writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
 
-            writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
+        //-----------------------------------------------
 
-            //-----------------------------------------------
+        int interval_time = 0;
+        int repeat = 0;
+        if(function == 1)
+        {
+            interval_time = Integer.parseInt(et_normal_interval_time.getText().toString());
+            repeat = Integer.parseInt(et_normal_repeat.getText().toString()) -1;//-1 want to match scan count
+        }
+        else
+        {
+            interval_time = Integer.parseInt(scan_interval_time.getText().toString());
+            repeat = Integer.parseInt(et_repeat_quick.getText().toString()) -1;//-1 want to match scan count
+        }
 
-            int interval_time = 0;
-            int repeat = 0;
-            if(function == 1)
+        if(show_finish_continous_dialog == true)
+        {
+            String content = "There were totally " + (continuous_count+1) + " scans has been performed!.";
+            Dialog_Pane("Continuous Scan Completed!",content);
+            show_finish_continous_dialog = false;
+            continuous_count = 0;
+        }
+        if (continuous) {
+            // Dialog_Pane_Bottom("aaa","bbb");
+            continuous_count ++;
+            calProgress.setVisibility(View.VISIBLE);
+            btn_scan.setText(getString(R.string.scanning));
+            DisableAllComponent();
+            Enable_Stop_Continous_button();
+            try {
+                Thread.sleep(interval_time*1000);
+            }catch (Exception e)
             {
-                interval_time = Integer.parseInt(et_normal_interval_time.getText().toString());
-                repeat = Integer.parseInt(et_normal_repeat.getText().toString()) -1;//-1 want to match scan count
-            }
-            else
-            {
-                interval_time = Integer.parseInt(scan_interval_time.getText().toString());
-                repeat = Integer.parseInt(et_repeat_quick.getText().toString()) -1;//-1 want to match scan count
-            }
 
-            if(show_finish_continous_dialog == true)
-            {
-                String content = "There were totally " + (continuous_count+1) + " scans has been performed!.";
-                Dialog_Pane("Continuous Scan Completed!",content);
-                show_finish_continous_dialog = false;
-                continuous_count = 0;
             }
-            if (continuous) {
-               // Dialog_Pane_Bottom("aaa","bbb");
-                continuous_count ++;
-                calProgress.setVisibility(View.VISIBLE);
-                btn_scan.setText(getString(R.string.scanning));
-                DisableAllComponent();
-                Enable_Stop_Continous_button();
-                try {
-                    Thread.sleep(interval_time*1000);
-                }catch (Exception e)
-                {
-
-                }
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SEND_DATA));
-                if(continuous_count == repeat || stop_continuous == true)
-                {
-                   // continuous_count = 0;
-                    continuous = false;
-                    stop_continuous = false;
-                    btn_continuous_scan_mode.setChecked(false);
-                    btn_continuous.setChecked(false);
-                    show_finish_continous_dialog = true;
-                    Disable_Stop_Continous_button();
-                }
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SEND_DATA));
+            if(continuous_count == repeat || stop_continuous == true)
+            {
+                // continuous_count = 0;
+                continuous = false;
+                stop_continuous = false;
+                btn_continuous_scan_mode.setChecked(false);
+                btn_continuous.setChecked(false);
+                show_finish_continous_dialog = true;
+                Disable_Stop_Continous_button();
             }
         }
     }
@@ -1966,6 +1977,19 @@ public class NewScanActivity extends Activity {
            }
             //read current ActivateState------------------------------------------------------------------------------------
             readActivateState();
+        }
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    String battery="";
+
+    public class getBatteryReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+
+            battery = Integer.toString(intent.getIntExtra(NIRScanSDK.EXTRA_BATTERY,0));
+            ScanDataResult();
         }
     }
     /**
@@ -2128,6 +2152,7 @@ public class NewScanActivity extends Activity {
             CSV[8][3] = pixel_coff[2] + ",";
             //Device Status Information
             CSV[13][0] = "Battery Capacity:,";
+            CSV[13][1] = battery + "%,";
             //referense info
             CSV[13][3] = "System Temp:,";
             CSV[14][3] = "System Humidity:,";

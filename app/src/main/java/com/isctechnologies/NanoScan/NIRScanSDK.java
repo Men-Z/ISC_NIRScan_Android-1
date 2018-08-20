@@ -120,6 +120,9 @@ public class NIRScanSDK {
     public static final String GET_UUID = "com.isctechnologies.NanoScan.bluetooth.le.GET_UUID";
     public static final String SEND_DEVICE_UUID = "com.isctechnologies.NanoScan.bluetooth.le.SEND_DEVICE_UUID";
     public static final String EXTRA_DEVICE_UUID = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_DEVICE_UUID";
+    public static final String GET_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.GET_BATTERY";
+    public static final String SEND_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.SEND_BATTERY";
+    public static final String EXTRA_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_BATTERY";
 
     public NIRScanSDK() {
     }
