@@ -440,7 +440,7 @@ Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanInterpConfigInfo(
         jobject ,jbyteArray scanData,jintArray scanType ,jbyteArray scanConfigSerialNumber,jbyteArray configName,jbyteArray numSections,
         jbyteArray sectionScanType, jbyteArray sectionWidthPx, jintArray sectionWavelengthStartNm, jintArray sectionWavelengthEndNm, jintArray sectionNumPatterns,
         jintArray sectionNumRepeats, jintArray sectionExposureTime,jintArray pga,jintArray systemp,jintArray syshumidity,
-        jintArray lampintensity,jdoubleArray shift_vector_coff,jdoubleArray pixel_coff/* this */) {
+        jintArray lampintensity,jdoubleArray shift_vector_coff,jdoubleArray pixel_coff,jintArray day/* this */) {
     scanResults finalScanResults;
     //transfer jbytearray to char array--------------------------------------------------------------------------------------------------------
     int scanData_len = env->GetArrayLength (scanData);
@@ -581,6 +581,18 @@ Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanInterpConfigInfo(
     pixel_coffDoubleArray[1] =finalScanResults.calibration_coeffs.PixelToWavelengthCoeffs[1];
     pixel_coffDoubleArray[2] =finalScanResults.calibration_coeffs.PixelToWavelengthCoeffs[2];
     env->ReleaseDoubleArrayElements(pixel_coff,pixel_coffDoubleArray,0);
+
+    //day--------------------------------------------------------------------------------------
+    int day_len = env->GetArrayLength (day);
+    int*dayIntArray = new  int[day_len];
+    env->GetIntArrayRegion (day, 0,day_len,dayIntArray);
+    dayIntArray[0] = finalScanResults.year;
+    dayIntArray[1] =  finalScanResults.month;
+    dayIntArray[2] = finalScanResults.day;
+    dayIntArray[3] = finalScanResults.hour;
+    dayIntArray[4] = finalScanResults.minute;
+    dayIntArray[5] = finalScanResults.second;
+    env->ReleaseIntArrayElements(day,dayIntArray,0);
 
     int length = 0;
     return length;

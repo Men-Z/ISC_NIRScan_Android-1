@@ -389,7 +389,6 @@ public class NanoBLEService extends Service {
                         Intent sendActiveConfIntent = new Intent(NIRScanSDK.SEND_BATTERY);
                         sendActiveConfIntent.putExtra(NIRScanSDK.EXTRA_BATTERY, battLevel);
                         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(sendActiveConfIntent);
-                        Log.d(TAG, "aaaaaaa");
                     }
                     else
                     {

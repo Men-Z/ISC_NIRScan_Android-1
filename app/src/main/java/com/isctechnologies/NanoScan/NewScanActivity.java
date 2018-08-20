@@ -107,9 +107,9 @@ public class NewScanActivity extends Activity {
             , int[] sectionExposureTime,byte[] EXTRA_DATA);
     public native int dlpSpecScanInterpConfigInfo(byte scanData[],int scanType[],byte[] scanConfigSerialNumber,byte configName[],byte bufnumSections[],  byte sectionScanType[],
                                                   byte sectionWidthPx[], int sectionWavelengthStartNm[], int sectionWavelengthEndNm[], int sectionNumPatterns[], int sectionNumRepeats[], int sectionExposureTime[],int pga[],int systemp[],int syshumidity[],
-                                                  int lampintensity[],double shift_vector_coff[],double pixel_coff[]);
+                                                  int lampintensity[],double shift_vector_coff[],double pixel_coff[],int day[]);
     public native int dlpSpecScanInterpReferenceInfo(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[],int refsystemp[],int refsyshumidity[],
-                                                     int reflampintensity[],int numpattren[],int width[],int numrepeat[],int day[]);
+                                                     int reflampintensity[],int numpattren[],int width[],int numrepeat[],int refday[]);
 
 
     private static Context mContext;
@@ -1786,12 +1786,7 @@ public class NewScanActivity extends Activity {
             tabPosition = mViewPager.getCurrentItem();
             mViewPager.setAdapter(mViewPager.getAdapter());
             mViewPager.invalidate();
-
-          /*  if (scanType.equals("00")) {
-                scanType = "Column 1";
-            } else {
-                scanType = "Hadamard";
-            }*/
+            
             //Show the right scan type------------------------------
             if(activeConf != null && activeConf.getScanType().equals("Slew")){
                 int numSections = activeConf.getSlewNumSections();
@@ -1817,15 +1812,7 @@ public class NewScanActivity extends Activity {
                    slew = slew + activeConf.getSectionNumPatterns()[i]+"%";
                 }
             }
-            //number of average----------------------------------------------------------------------------------------------
-         /*   if(function==3 && btn_scan_mode.isChecked())
-            {
-                numberOfaverage = Integer.parseInt(et_repead.getText().toString());
-            }
-            else
-            {
-                numberOfaverage =  activeConf.getSectionNumRepeats()[0];
-            }*/
+
 
             float mesureTime =(float) (EndTime - startTime)/1000;
 
@@ -1854,28 +1841,21 @@ public class NewScanActivity extends Activity {
             {
                 continuous = btn_continuous_scan_mode.isChecked();
             }
-            if(function == 4 && btn_reference.isChecked())
-            {
-                saveReference();
-                SaveReferenceDialog();
-            }
-            else
-            {
 
-              //  writeCSV(filetsName, results, saveOS);
-
-             //   writeCSVDict(filetsName, scanType, ts, String.valueOf(minWavelength), String.valueOf(maxWavelength), String.valueOf(results.getLength()), String.valueOf(results.getLength()), Integer.toString(numberOfaverage), Float.toString(mesureTime), saveOS,slew);
-
-                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
-            }
+            SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_BATTERY));
-            //ScanDataResult();
+
         }
     }
     private void ScanDataResult()
     {
-        writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
 
+        writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
+        if(function == 4 && btn_reference.isChecked())
+        {
+            saveReference();
+            SaveReferenceDialog();
+        }
         //-----------------------------------------------
 
         int interval_time = 0;
@@ -2073,6 +2053,8 @@ public class NewScanActivity extends Activity {
                 ,"40.98","42.15","43.33","44.50","45.67","46.84","48.01","49.18","50.35","51.52","52.69","53.86","55.04","56.21","57.38","58.55","59.72","60.89"};
         String exposureTime[] = {"0.635ms","1.27ms"," 2.54ms"," 5.08ms","15.24ms","30.48ms","60.96ms"};
         int index = 0;
+        double temp;
+        double humidity;
 
         int refsystemp[] =new int[1];
         int refsyshumidity[] =new int[1];
@@ -2080,11 +2062,12 @@ public class NewScanActivity extends Activity {
         int numpattren[] =new int[1];
         int width[] =new int[1];
         int numrepeat[] =new int[1];
-        int day[] =new int[6];
+        int refday[] =new int[6];
 
         int systemp[] =new int[1];
         int syshumidity[] =new int[1];
         int lampintensity[] =new int[1];
+        int day[] =new int[6];
         double shift_vector_coff[] = new double[3];
         double pixel_coff[] = new double[3];
         //-------------------------------------------------
@@ -2092,14 +2075,14 @@ public class NewScanActivity extends Activity {
         byte[]bufnumSections = new byte[1];
         int []pga = new int[1];
 
-        String CSV[][] = new String[34][15];
-        for (int i = 0; i < 34; i++)
+        String CSV[][] = new String[35][15];
+        for (int i = 0; i < 35; i++)
             for (int j = 0; j < 15; j++)
                 CSV[i][j] = ",";
         dlpSpecScanInterpConfigInfo(scandata,bufscanType,scanConfigSerialNumber,configName,bufnumSections,
                 sectionScanType,sectionWidthPx,sectionWavelengthStartNm,sectionWavelengthEndNm,sectionNumPatterns,sectionNumRepeats,sectionExposureTime,pga,systemp,syshumidity,lampintensity,
-                shift_vector_coff,pixel_coff);
-        dlpSpecScanInterpReferenceInfo(scandata,RefCalCoefficients,RefCalMatrix,refsystemp,refsyshumidity,reflampintensity,numpattren,width,numrepeat,day);
+                shift_vector_coff,pixel_coff,day);
+        dlpSpecScanInterpReferenceInfo(scandata,RefCalCoefficients,RefCalMatrix,refsystemp,refsyshumidity,reflampintensity,numpattren,width,numrepeat,refday);
         numSections = bufnumSections[0];
         scanType = bufscanType[0];
         //----------------------------------------------------------------
@@ -2118,7 +2101,7 @@ public class NewScanActivity extends Activity {
             CSV[12][0] = "---Device Status Information---,";
             CSV[12][3] = "---Reference Scan Information---";
             CSV[22][0] = "---Scan Config Information---";
-            CSV[33][0] = "---Scan Data---";
+            CSV[34][0] = "---Scan Data---";
             //General Information
             CSV[3][0] = "Model Number:,";
             CSV[4][0] = "UUID:,";
@@ -2139,8 +2122,12 @@ public class NewScanActivity extends Activity {
             CSV[6][1] = Tivarev + ",";
             CSV[6][3] = Specrev + ",";
 
-            CSV[9][1] = systemp[0] + "C" + ",";
-            CSV[9][3] = syshumidity[0] + "%RH" + ",";
+            temp = systemp[0];
+            temp = temp/100;
+            CSV[9][1] = temp + "C" + ",";
+            humidity =  syshumidity[0];
+            humidity =  humidity/100;
+            CSV[9][3] = humidity + "%RH" + ",";
             CSV[10][1] = lampintensity[0] + ",";
 
             CSV[7][1] = shift_vector_coff[0] + ",";
@@ -2153,6 +2140,9 @@ public class NewScanActivity extends Activity {
             //Device Status Information
             CSV[13][0] = "Battery Capacity:,";
             CSV[13][1] = battery + "%,";
+            CSV[14][0] = "Scan TimeStamp:,";
+            CSV[14][1] = day[1] + "/"+ day[2] + "/"+ day[0] + "-" + day[3] + ":" + day[4] + ":" + day[5] + ",";
+
             //referense info
             CSV[13][3] = "System Temp:,";
             CSV[14][3] = "System Humidity:,";
@@ -2162,42 +2152,59 @@ public class NewScanActivity extends Activity {
             CSV[18][3] = "Number of Scans to Average:,";
             CSV[19][3] = "Scan TimeStamp:,";
 
-            CSV[13][4] = refsystemp[0] + "C";
-            CSV[14][4] = refsyshumidity[0] + "%RH";
+            temp = refsystemp[0];
+            temp = temp/100;
+            CSV[13][4] = temp + "C";
+            humidity =  syshumidity[0];
+            humidity =  refsyshumidity[0]/100;
+            CSV[14][4] = humidity + "%RH";
             CSV[15][4] = reflampintensity[0] +"";
             CSV[16][4] = numpattren[0] + "pts";
             index = width[0];
             CSV[17][4] = widthnm[index] + "nm";
             CSV[18][4] = numrepeat[0] + "";
-            CSV[19][4] = day[1] + "/"+ day[2] + "/"+ day[0] + "-" + day[3] + ":" + day[4] + ":" + day[5];
+            CSV[19][4] = refday[1] + "/"+ refday[2] + "/"+ refday[0] + "-" + refday[3] + ":" + refday[4] + ":" + refday[5];
 
             //Scan Configuration
             CSV[23][0] = "Scan Type:,";
             CSV[24][0] = "Scan Config Name:,";
-            CSV[25][0] = "Spectral Start:,";
-            CSV[26][0] = "Spectral End:,";
-            CSV[27][0] = "Sample Points:,";
-            CSV[28][0] = "Scan Width:,";
-            CSV[29][0] = "Exposure Time:,";
-            CSV[30][0] = "Scan Number to Average:,";
-            CSV[31][0] = "PGA Gain:,";
+            CSV[25][0] = "Section Scan Type:,";
+            CSV[26][0] = "Spectral Start:,";
+            CSV[27][0] = "Spectral End:,";
+            CSV[28][0] = "Sample Points:,";
+            CSV[29][0] = "Scan Width:,";
+            CSV[30][0] = "Exposure Time:,";
+            CSV[31][0] = "Scan Number to Average:,";
+            CSV[32][0] = "PGA Gain:,";
 
             String  configname = getBytetoString(configName);
 
             CSV[23][1] = scanType + " (0:Col; 1:Had; 2:Slew),";
+            if(function == 4)
+            {
+                configname = "Reference";
+            }
             CSV[24][1] = configname ;
             for(int i=0;i<numSections;i++)
             {
-                CSV[25][i+1] = sectionWavelengthStartNm[i] + "nm,";
-                CSV[26][i+1] = sectionWavelengthEndNm[i] + "nm,";
-                CSV[27][i+1] = sectionNumPatterns[i] + "pts,";
+                if(sectionScanType[i] ==0)
+                {
+                    CSV[25][i+1] = "Col,";
+                }
+                else
+                {
+                    CSV[25][i+1] = "Had,";
+                }
+                CSV[26][i+1] = sectionWavelengthStartNm[i] + "nm,";
+                CSV[27][i+1] = sectionWavelengthEndNm[i] + "nm,";
+                CSV[28][i+1] = sectionNumPatterns[i] + "pts,";
                 index = sectionWidthPx[i];
-                CSV[28][i+1] = widthnm[index] + "nm,";
+                CSV[29][i+1] = widthnm[index] + "nm,";
                 index = sectionExposureTime[i];
-                CSV[29][i+1] = exposureTime[index] + ",";
+                CSV[30][i+1] = exposureTime[index] + ",";
             }
-            CSV[30][1] = sectionNumRepeats[0] + ",";
-            CSV[31][1] = pga[0] + ",";
+            CSV[31][1] = sectionNumRepeats[0] + ",";
+            CSV[32][1] = pga[0] + ",";
 
 
             CSVWriter writer;
@@ -3796,7 +3803,7 @@ public class NewScanActivity extends Activity {
         int[] sectionExposureTime = new int[5];
         byte[] EXTRA_DATA = new byte[155];
         //transfer config name to byte
-        String isoString ="aaa";
+        String isoString ="QuickSet";
         int name_size = isoString.length();
         byte[] ConfigNamebytes=isoString.getBytes();
         for(int i=0;i<name_size;i++)
