@@ -139,6 +139,7 @@ public class NanoBLEService extends Service {
     private static BroadcastReceiver mReadCurrentConfigReceiver;
     private static BroadcastReceiver mWriteScanConfigReceiver;
     private static BroadcastReceiver mReadActivateStateReceiver;
+    private static BroadcastReceiver mUUIDRequestReceiver;
 
     public static final String ACTION_SCAN_STARTED = "com.isctechnologies.NanoScan.bluetooth.service.ACTION_SCAN_STARTED";
 
@@ -471,6 +472,12 @@ public class NanoBLEService extends Service {
                     Intent ReadActivateStateIntent = new Intent(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
                     ReadActivateStateIntent.putExtra(NIRScanSDK.RETURN_READ_ACTIVATE_STATE, data);
                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(ReadActivateStateIntent);
+                } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.DEVICE_UUID)) {
+                    byte[] data = characteristic.getValue();
+                    Intent sendActiveConfIntent = new Intent(NIRScanSDK.SEND_DEVICE_UUID);
+                    sendActiveConfIntent.putExtra(NIRScanSDK.EXTRA_DEVICE_UUID, data);
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(sendActiveConfIntent);
+                    Log.d(TAG, "aaaaaaa");
                 } else {
                     if (debug)
                         Log.d(TAG, "Read from unknown characteristic:" + characteristic.getUuid().toString());
@@ -1293,6 +1300,17 @@ public class NanoBLEService extends Service {
             }
         };
 
+        mUUIDRequestReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null) {
+                    if (debug)
+                        Log.d(TAG, "Requesting Device Info");
+                    NIRScanSDK.getUUID();
+                }
+            }
+        };
+
         mStatusRequestReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -1614,6 +1632,7 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadCurrentConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_CONFIG));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mWriteScanConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_ACTIVATE_STATE));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mUUIDRequestReceiver, new IntentFilter(NIRScanSDK.GET_UUID));
 
     }
 

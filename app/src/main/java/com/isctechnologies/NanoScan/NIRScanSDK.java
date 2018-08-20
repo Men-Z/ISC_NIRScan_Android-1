@@ -117,6 +117,9 @@ public class NIRScanSDK {
     public static final String WRITE_SCAN_CONFIG_VALUE = "write.scan.config.value";
     public static final String ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS = "action.return.write.scan.config.status";
     public static final String RETURN_WRITE_SCAN_CONFIG_STATUS = "return.write.scan.config.status";
+    public static final String GET_UUID = "com.isctechnologies.NanoScan.bluetooth.le.GET_UUID";
+    public static final String SEND_DEVICE_UUID = "com.isctechnologies.NanoScan.bluetooth.le.SEND_DEVICE_UUID";
+    public static final String EXTRA_DEVICE_UUID = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_DEVICE_UUID";
 
     public NIRScanSDK() {
     }
@@ -290,6 +293,9 @@ public class NIRScanSDK {
         } else if(NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData == null) {
             Log.e("NIRScanSDK", "Failed to enumerate UUID:" + NanoGATT.GSDIS_RETURN_WRITE_SCANCONFIG_DATA.toString());
             return true;
+        } else if(NanoGattCharacteristic.mBleGattCharUUID == null) {
+            Log.e("NIRScanSDK", "Failed to enumerate UUID:" + NanoGATT.DEVICE_UUID.toString());
+            return true;
         }else {
             return false;
         }
@@ -439,6 +445,8 @@ public class NIRScanSDK {
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_RETURN_WRITE_SCANCONFIG_DATA) == 0) {
                     NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData = gattCharacteristic;
                     gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData, true);
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.DEVICE_UUID) == 0) {
+                    NanoGattCharacteristic.mBleGattCharUUID = gattCharacteristic;
                 }
             }
         }
@@ -511,6 +519,10 @@ public class NIRScanSDK {
 
     public static void getManufacturerName() {
         readCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharDISManufName);
+    }
+
+    public static void getUUID() {
+        readCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharUUID);
     }
 
     public static void getBatteryLevel() {
@@ -1198,6 +1210,7 @@ public class NIRScanSDK {
         public static BluetoothGattCharacteristic mBleGattCharacteristicReturnCurrentScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharacteristicWriteScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharacteristicReturnWriteScanConfigurationData;
+        public static BluetoothGattCharacteristic mBleGattCharUUID;
 
         public NanoGattCharacteristic() {
         }
@@ -1257,6 +1270,7 @@ public class NIRScanSDK {
         public static final UUID GSDIS_RETURN_CURRENT_SCANCONFIG_DATA = UUID.fromString("43484141-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_WRITE_SCANCONFIG_DATA = UUID.fromString("43484142-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RETURN_WRITE_SCANCONFIG_DATA = UUID.fromString("43484143-444C-5020-4E49-52204E616E6F");
+        public static final UUID DEVICE_UUID = UUID.fromString("00002A23-0000-1000-8000-00805F9B34FB");
 
         public NanoGATT() {
         }

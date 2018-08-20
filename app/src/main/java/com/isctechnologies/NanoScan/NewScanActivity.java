@@ -139,6 +139,7 @@ public class NewScanActivity extends Activity {
     private final BroadcastReceiver RetrunActivateStatusReceiver = new RetrunActivateStatusReceiver();
     private final BroadcastReceiver ReturnCurrentScanConfigurationDataReceiver = new ReturnCurrentScanConfigurationDataReceiver();
     private final BroadcastReceiver mInfoReceiver = new mInfoReceiver();
+    private final BroadcastReceiver getUUIDReceiver = new getUUIDReceiver();
 
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(NIRScanSDK.SCAN_DATA);
@@ -744,6 +745,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(mInfoReceiver, new IntentFilter(NIRScanSDK.ACTION_INFO));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(getUUIDReceiver, new IntentFilter(NIRScanSDK.SEND_DEVICE_UUID));
         //LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
 
         //----------------------------------------------------------------
@@ -966,7 +968,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnCurrentScanConfigurationDataReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mInfoReceiver);
-
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(getUUIDReceiver);
 
         mHandler.removeCallbacksAndMessages(null);
 
@@ -1859,6 +1861,7 @@ public class NewScanActivity extends Activity {
 
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
             }
+
             writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
 
             //-----------------------------------------------
@@ -1940,6 +1943,27 @@ public class NewScanActivity extends Activity {
             HWrev = intent.getStringExtra(NIRScanSDK.EXTRA_HW_REV);
             Tivarev = intent.getStringExtra(NIRScanSDK.EXTRA_TIVA_REV);
             Specrev = intent.getStringExtra(NIRScanSDK.EXTRA_SPECTRUM_REV);
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_UUID));
+        }
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    String uuid="";
+
+    public class getUUIDReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+
+           byte buf[] = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DEVICE_UUID);
+           for(int i=0;i<buf.length;i++)
+           {
+               uuid += Integer.toHexString( 0xff & buf[i] );
+               if(i!= buf.length-1)
+               {
+                   uuid +=":";
+               }
+           }
             //read current ActivateState------------------------------------------------------------------------------------
             readActivateState();
         }
@@ -2085,6 +2109,7 @@ public class NewScanActivity extends Activity {
             CSV[10][0] = "Lamp Intensity:,";
 
             CSV[3][1] = model_name + ",";
+            CSV[4][1] = uuid + ",";
             CSV[4][3] = serial_num + ",";
             CSV[5][1] = HWrev + ",";
             CSV[6][1] = Tivarev + ",";
