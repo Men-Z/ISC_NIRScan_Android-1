@@ -61,14 +61,18 @@ import com.opencsv.CSVWriter;
 
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.isctechnologies.NanoScan.SettingsManager.SharedPreferencesKeys.preferredDeviceModel;
 
 /**
  * Activity controlling the Nano once it is connected
@@ -101,6 +105,12 @@ public class NewScanActivity extends Activity {
     public static native int dlpSpecScanWriteConfiguration(int scanType,int scanConfigIndex,int numRepeat,byte[] scanConfigSerialNumber,byte[] configName,byte numSections,
                                                            byte[] sectionScanType, byte[] sectionWidthPx, int[] sectionWavelengthStartNm, int[] sectionWavelengthEndNm, int[] sectionNumPatterns
             , int[] sectionExposureTime,byte[] EXTRA_DATA);
+    public native int dlpSpecScanInterpConfigInfo(byte scanData[],int scanType[],byte[] scanConfigSerialNumber,byte configName[],byte bufnumSections[],  byte sectionScanType[],
+                                                  byte sectionWidthPx[], int sectionWavelengthStartNm[], int sectionWavelengthEndNm[], int sectionNumPatterns[], int sectionNumRepeats[], int sectionExposureTime[],int pga[],int systemp[],int syshumidity[],
+                                                  int lampintensity[],double shift_vector_coff[],double pixel_coff[]);
+    public native int dlpSpecScanInterpReferenceInfo(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[],int refsystemp[],int refsyshumidity[],
+                                                     int reflampintensity[],int numpattren[],int width[],int numrepeat[],int day[]);
+
 
     private static Context mContext;
 
@@ -128,6 +138,8 @@ public class NewScanActivity extends Activity {
     private final IntentFilter RetrunReadActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
     private final BroadcastReceiver RetrunActivateStatusReceiver = new RetrunActivateStatusReceiver();
     private final BroadcastReceiver ReturnCurrentScanConfigurationDataReceiver = new ReturnCurrentScanConfigurationDataReceiver();
+    private final BroadcastReceiver mInfoReceiver = new mInfoReceiver();
+
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(NIRScanSDK.SCAN_DATA);
     private final IntentFilter refReadyFilter = new IntentFilter(NIRScanSDK.REF_CONF_DATA);
@@ -731,6 +743,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunReadActivateStatusReceiver, RetrunReadActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(mInfoReceiver, new IntentFilter(NIRScanSDK.ACTION_INFO));
         //LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
 
         //----------------------------------------------------------------
@@ -952,6 +965,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnCurrentScanConfigurationDataReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mInfoReceiver);
 
 
         mHandler.removeCallbacksAndMessages(null);
@@ -1845,6 +1859,7 @@ public class NewScanActivity extends Activity {
 
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
             }
+            writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
 
             //-----------------------------------------------
 
@@ -1903,6 +1918,28 @@ public class NewScanActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             SpectrumCalCoefficients = intent.getByteArrayExtra(NIRScanSDK.EXTRA_SPEC_COEF_DATA);
             passSpectrumCalCoefficients = SpectrumCalCoefficients;
+            //read current ActivateState------------------------------------------------------------------------------------
+           // readActivateState();
+            //Send broadcast to the BLE service to request device information
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_INFO));
+        }
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    String model_name="";
+    String serial_num = "";
+    String HWrev = "";
+    String Tivarev ="";
+    String Specrev = "";
+    public class mInfoReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            model_name = intent.getStringExtra(NIRScanSDK.EXTRA_MODEL_NUM);
+            serial_num = intent.getStringExtra(NIRScanSDK.EXTRA_SERIAL_NUM);
+            HWrev = intent.getStringExtra(NIRScanSDK.EXTRA_HW_REV);
+            Tivarev = intent.getStringExtra(NIRScanSDK.EXTRA_TIVA_REV);
+            Specrev = intent.getStringExtra(NIRScanSDK.EXTRA_SPECTRUM_REV);
             //read current ActivateState------------------------------------------------------------------------------------
             readActivateState();
         }
@@ -1969,22 +2006,170 @@ public class NewScanActivity extends Activity {
      * @param scanResults the {@link NIRScanSDK.ScanResults} structure to save
      * @param saveOS boolean indicating if the CSV file should be saved to the OS
      */
-    private void writeCSV(String currentTime, NIRScanSDK.ScanResults scanResults, boolean saveOS) {
+    private void writeCSV(byte[] scandata,String currentTime, NIRScanSDK.ScanResults scanResults, boolean saveOS,byte[]RefCalCoefficients,byte[]RefCalMatrix) {
 
+        int scanType=0;
+        int scanConfigIndex=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        int numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionNumRepeats = new int[5];
+        int[] sectionExposureTime = new int[5];
+        String widthnm[] ={"","","2.34","3.51","4.68","5.85","7.03","8.20","9.37","10.54","11.71","12.88","14.05","15.22","16.39","17.56","18.74"
+                ,"19.91","21.08","22.25","23.42","24.59","25.76","26.93","28.10","29.27","30.44","31.62","32.79","33.96","35.13","36.30","37.47","38.64","39.81"
+                ,"40.98","42.15","43.33","44.50","45.67","46.84","48.01","49.18","50.35","51.52","52.69","53.86","55.04","56.21","57.38","58.55","59.72","60.89"};
+        String exposureTime[] = {"0.635ms","1.27ms"," 2.54ms"," 5.08ms","15.24ms","30.48ms","60.96ms"};
+        int index = 0;
+
+        int refsystemp[] =new int[1];
+        int refsyshumidity[] =new int[1];
+        int reflampintensity[] =new int[1];
+        int numpattren[] =new int[1];
+        int width[] =new int[1];
+        int numrepeat[] =new int[1];
+        int day[] =new int[6];
+
+        int systemp[] =new int[1];
+        int syshumidity[] =new int[1];
+        int lampintensity[] =new int[1];
+        double shift_vector_coff[] = new double[3];
+        double pixel_coff[] = new double[3];
+        //-------------------------------------------------
+        int []bufscanType = new int[1];
+        byte[]bufnumSections = new byte[1];
+        int []pga = new int[1];
+
+        String CSV[][] = new String[34][15];
+        for (int i = 0; i < 34; i++)
+            for (int j = 0; j < 15; j++)
+                CSV[i][j] = ",";
+        dlpSpecScanInterpConfigInfo(scandata,bufscanType,scanConfigSerialNumber,configName,bufnumSections,
+                sectionScanType,sectionWidthPx,sectionWavelengthStartNm,sectionWavelengthEndNm,sectionNumPatterns,sectionNumRepeats,sectionExposureTime,pga,systemp,syshumidity,lampintensity,
+                shift_vector_coff,pixel_coff);
+        dlpSpecScanInterpReferenceInfo(scandata,RefCalCoefficients,RefCalMatrix,refsystemp,refsyshumidity,reflampintensity,numpattren,width,numrepeat,day);
+        numSections = bufnumSections[0];
+        scanType = bufscanType[0];
+        //----------------------------------------------------------------
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
-            prefix = "Nano";
+            prefix = "ISC";
         }
 
         if (saveOS) {
             String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix + currentTime + ".csv";
 
+
+            // Section information field names
+            CSV[0][0] = "***ISC NIRScan Scan Result ***,";
+            CSV[2][0] = "---General Information---";
+            CSV[12][0] = "---Device Status Information---,";
+            CSV[12][3] = "---Reference Scan Information---";
+            CSV[22][0] = "---Scan Config Information---";
+            CSV[33][0] = "---Scan Data---";
+            //General Information
+            CSV[3][0] = "Model Number:,";
+            CSV[4][0] = "UUID:,";
+            CSV[4][2] = "Serial Number:,";
+            CSV[5][0] = "Hardware Rev:,";
+            CSV[6][0] = "Tiva Rev:,";
+            CSV[6][2] = "Spectrum Rev:,";
+            CSV[7][0] = "Shift Vector Coefficient:,";
+            CSV[8][0] = "Pixel to Wavelength Coefficient:,";
+            CSV[9][0] = "System Temp:,";
+            CSV[9][2] = "System Humidity:,";
+            CSV[10][0] = "Lamp Intensity:,";
+
+            CSV[3][1] = model_name + ",";
+            CSV[4][3] = serial_num + ",";
+            CSV[5][1] = HWrev + ",";
+            CSV[6][1] = Tivarev + ",";
+            CSV[6][3] = Specrev + ",";
+
+            CSV[9][1] = systemp[0] + "C" + ",";
+            CSV[9][3] = syshumidity[0] + "%RH" + ",";
+            CSV[10][1] = lampintensity[0] + ",";
+
+            CSV[7][1] = shift_vector_coff[0] + ",";
+            CSV[7][2] = shift_vector_coff[1] + ",";
+            CSV[7][3] = shift_vector_coff[2] + ",";
+
+            CSV[8][1] = pixel_coff[0] + ",";
+            CSV[8][2] = pixel_coff[1] + ",";
+            CSV[8][3] = pixel_coff[2] + ",";
+            //Device Status Information
+            CSV[13][0] = "Battery Capacity:,";
+            //referense info
+            CSV[13][3] = "System Temp:,";
+            CSV[14][3] = "System Humidity:,";
+            CSV[15][3] = "Lamp Intensity:,";
+            CSV[16][3] = "Sample Points:,";
+            CSV[17][3] = "Scan Resolution:,";
+            CSV[18][3] = "Number of Scans to Average:,";
+            CSV[19][3] = "Scan TimeStamp:,";
+
+            CSV[13][4] = refsystemp[0] + "C";
+            CSV[14][4] = refsyshumidity[0] + "%RH";
+            CSV[15][4] = reflampintensity[0] +"";
+            CSV[16][4] = numpattren[0] + "pts";
+            index = width[0];
+            CSV[17][4] = widthnm[index] + "nm";
+            CSV[18][4] = numrepeat[0] + "";
+            CSV[19][4] = day[1] + "/"+ day[2] + "/"+ day[0] + "-" + day[3] + ":" + day[4] + ":" + day[5];
+
+            //Scan Configuration
+            CSV[23][0] = "Scan Type:,";
+            CSV[24][0] = "Scan Config Name:,";
+            CSV[25][0] = "Spectral Start:,";
+            CSV[26][0] = "Spectral End:,";
+            CSV[27][0] = "Sample Points:,";
+            CSV[28][0] = "Scan Width:,";
+            CSV[29][0] = "Exposure Time:,";
+            CSV[30][0] = "Scan Number to Average:,";
+            CSV[31][0] = "PGA Gain:,";
+
+            String  configname = getBytetoString(configName);
+
+            CSV[23][1] = scanType + " (0:Col; 1:Had; 2:Slew),";
+            CSV[24][1] = configname ;
+            for(int i=0;i<numSections;i++)
+            {
+                CSV[25][i+1] = sectionWavelengthStartNm[i] + "nm,";
+                CSV[26][i+1] = sectionWavelengthEndNm[i] + "nm,";
+                CSV[27][i+1] = sectionNumPatterns[i] + "pts,";
+                index = sectionWidthPx[i];
+                CSV[28][i+1] = widthnm[index] + "nm,";
+                index = sectionExposureTime[i];
+                CSV[29][i+1] = exposureTime[index] + ",";
+            }
+            CSV[30][1] = sectionNumRepeats[0] + ",";
+            CSV[31][1] = pga[0] + ",";
+
+
             CSVWriter writer;
             try {
                 writer = new CSVWriter(new FileWriter(csvOS), ',', CSVWriter.NO_QUOTE_CHARACTER);
                 List<String[]> data = new ArrayList<String[]>();
-                data.add(new String[]{"Wavelength,Intensity,Absorbance,Reflectance"});
 
+                String buf = "";
+                for (int i = 0; i < 34; i++)
+                {
+                    for (int j = 0; j < 15; j++)
+                    {
+                        buf += CSV[i][j];
+                        if (j == 14)
+                        {
+                            data.add(new String[]{buf});
+                        }
+                    }
+                    buf = "";
+                }
+
+                data.add(new String[]{"Wavelength,Intensity,Absorbance,Reflectance"});
                 int csvIndex;
                 for (csvIndex = 0; csvIndex < scanResults.getLength(); csvIndex++) {
                     double waves = scanResults.getWavelength()[csvIndex];
@@ -1993,12 +2178,43 @@ public class NewScanActivity extends Activity {
                     float reflect = (float) results.getUncalibratedIntensity()[csvIndex] / results.getIntensity()[csvIndex];
                     data.add(new String[]{String.valueOf(waves), String.valueOf(intens), String.valueOf(absorb), String.valueOf(reflect)});
                 }
+
                 writer.writeAll(data);
                 writer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public String getBytetoString(byte configName[]) {
+        byte[] byteChars = new byte[40];
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        byte[] var3 = byteChars;
+        int i = byteChars.length;
+
+        for(int var5 = 0; var5 < i; ++var5) {
+            byte b = var3[var5];
+            byteChars[b] = 0;
+        }
+
+        String s = null;
+
+        for(i = 0; i < configName.length; ++i) {
+            byteChars[i] = configName[i];
+            if(configName[i] == 0) {
+                break;
+            }
+
+            os.write(configName[i]);
+        }
+        try {
+            s = new String(os.toByteArray(), "UTF-8");
+        } catch (UnsupportedEncodingException var7) {
+            var7.printStackTrace();
+        }
+
+        return s;
     }
 
     /**
@@ -3319,7 +3535,7 @@ public class NewScanActivity extends Activity {
 
     private void readActivateState()
     {
-
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mInfoReceiver);
         Intent ReadActivateState = new Intent(NIRScanSDK.ACTION_READ_ACTIVATE_STATE);
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(ReadActivateState);
     }
