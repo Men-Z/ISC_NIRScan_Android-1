@@ -1849,7 +1849,10 @@ public class NewScanActivity extends Activity {
     }
     private void ScanDataResult()
     {
-
+        if(Licensestatusfalg == false)
+        {
+            closeFunction();
+        }
         writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
         if(function == 4 && btn_reference.isChecked())
         {
