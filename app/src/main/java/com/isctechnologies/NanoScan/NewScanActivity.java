@@ -1849,7 +1849,7 @@ public class NewScanActivity extends Activity {
     }
     private void ScanDataResult()
     {
-        if(Licensestatusfalg == false)
+        if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, null).contains("Activated") ==false)
         {
             closeFunction();
         }
@@ -2089,13 +2089,18 @@ public class NewScanActivity extends Activity {
         numSections = bufnumSections[0];
         scanType = bufscanType[0];
         //----------------------------------------------------------------
+        String  configname = getBytetoString(configName);
+        if(function == 4)
+        {
+            configname = "Reference";
+        }
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
             prefix = "ISC";
         }
 
         if (saveOS) {
-            String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix + currentTime + ".csv";
+            String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix+"_" + configname + "_" + currentTime + ".csv";
 
 
             // Section information field names
@@ -2180,13 +2185,10 @@ public class NewScanActivity extends Activity {
             CSV[31][0] = "Scan Number to Average:,";
             CSV[32][0] = "PGA Gain:,";
 
-            String  configname = getBytetoString(configName);
+
 
             CSV[23][1] = scanType + " (0:Col; 1:Had; 2:Slew),";
-            if(function == 4)
-            {
-                configname = "Reference";
-            }
+
             CSV[24][1] = configname ;
             for(int i=0;i<numSections;i++)
             {
