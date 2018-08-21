@@ -67,6 +67,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -2013,7 +2014,12 @@ public class NewScanActivity extends Activity {
     public class notifyCompleteReceiver extends BroadcastReceiver {
 
         public void onReceive(Context context, Intent intent) {
-            if(preferredDevice.equals(ScanListMain.storeCalibration.device))
+            Boolean reference = false;
+            if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "Not").equals("ReferenceScan"))
+            {
+                reference = true;
+            }
+            if(preferredDevice.equals(ScanListMain.storeCalibration.device) && reference == false)
             {
                 byte[] refCoeff = ScanListMain.storeCalibration.storrefCoeff;
                 byte[] refMatrix = ScanListMain.storeCalibration.storerefMatrix;
@@ -2026,6 +2032,10 @@ public class NewScanActivity extends Activity {
             }
             else
             {
+                if(reference == true)
+                {
+                    SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "Not");
+                }
                 LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SET_TIME));
             }
         }
@@ -2090,9 +2100,22 @@ public class NewScanActivity extends Activity {
         scanType = bufscanType[0];
         //----------------------------------------------------------------
         String  configname = getBytetoString(configName);
-        if(function == 4)
+        if(function == 4 && btn_reference.isChecked())
         {
             configname = "Reference";
+            Calendar cal = Calendar.getInstance();
+            int year = cal.get(Calendar.YEAR);
+            int month=cal.get(Calendar.MONTH);
+            int date=cal.get(Calendar.DATE);
+            int hour=cal.get(Calendar.HOUR);
+            int minute=cal.get(Calendar.MINUTE);
+            int second=cal.get(Calendar.SECOND);
+            refday[0] = year;
+            refday[1] = month;
+            refday[2] = date;
+            refday[3] = hour;
+            refday[4] = minute;
+            refday[5] = second;
         }
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
@@ -2525,6 +2548,7 @@ public class NewScanActivity extends Activity {
             @Override
             public void onClick(DialogInterface arg0, int arg1) {
                 alertDialog.dismiss();
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "ReferenceScan");
                 finish();
             }
         });

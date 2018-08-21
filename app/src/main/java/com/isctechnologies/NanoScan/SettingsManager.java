@@ -52,6 +52,7 @@ public class SettingsManager {
         public static final String preferredDeviceModel = "preferredDeviceModel";
         public static final String licensekey = "licensekey";
         public static final String Activacatestatus = "Function is locked.";
+        public static final String ReferenceScan = "Not";
 
         public SharedPreferencesKeys() {
         }
