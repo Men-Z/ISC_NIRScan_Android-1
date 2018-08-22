@@ -636,6 +636,26 @@ public class NIRScanSDK {
 
         writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicCharacteristicActivateState, index);
         System.out.println("__BT_SERVICE: Set ActivateState key");
+        if(index.length==12)
+        {
+            Boolean unactivate = true;
+            for(int i=0;i<12;i++)
+            {
+                if(index[i] !=0)
+                {
+                    unactivate = false;
+                }
+            }
+            if(unactivate)
+            {
+               try {
+                Thread.sleep(200);
+               }catch (Exception e){
+
+               }
+                ReadActiveState();
+            }
+        }
     }
     public static void ReadCurrentConfig(byte[] index) {
 

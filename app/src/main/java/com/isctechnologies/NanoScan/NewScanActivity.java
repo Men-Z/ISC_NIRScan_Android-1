@@ -1015,6 +1015,7 @@ public class NewScanActivity extends Activity {
             startActivity(configureIntent);
         }
         if (id == R.id.action_key) {
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunReadActivateStatusReceiver);
             Intent configureIntent = new Intent(mContext, LicenseKey.class);
             startActivity(configureIntent);
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
@@ -3655,7 +3656,7 @@ public class NewScanActivity extends Activity {
             else
             {
                  String licensekey = SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, null);
-                if(licensekey!=null)
+                if(licensekey!=null && licensekey!="")
                 {
                     calProgress.setVisibility(View.VISIBLE);
                     setActivateStateKey(licensekey);
@@ -3996,6 +3997,13 @@ public class NewScanActivity extends Activity {
         btn_manual.setBackgroundColor(0xFF0099CC);
         btn_quickset.setBackgroundColor(0xFF0099CC);
         btn_maintain.setBackgroundColor(0xFF0099CC);
+
+        findViewById(R.id.layout_normal).setVisibility(View.VISIBLE);
+        findViewById(R.id.layout_manual).setVisibility(View.GONE);
+        findViewById(R.id.layout_quickset).setVisibility(View.GONE);
+        findViewById(R.id.layout_maintain).setVisibility(View.GONE);
+        btn_normal.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
+        function = 1;
     }
     private void closeFunction()
     {
@@ -4005,5 +4013,11 @@ public class NewScanActivity extends Activity {
         btn_manual.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
         btn_quickset.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
         btn_maintain.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
+        findViewById(R.id.layout_normal).setVisibility(View.VISIBLE);
+        findViewById(R.id.layout_manual).setVisibility(View.GONE);
+        findViewById(R.id.layout_quickset).setVisibility(View.GONE);
+        findViewById(R.id.layout_maintain).setVisibility(View.GONE);
+        btn_normal.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
+        function = 1;
     }
 }

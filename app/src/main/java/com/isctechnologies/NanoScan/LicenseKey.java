@@ -27,12 +27,15 @@ public class LicenseKey extends Activity {
     private static Context mContext;
     Button btn_submit;
     Button btn_clear;
+    Button btn_unactivate;
     TextView et_status;
     TextView et_license_key;
     private AlertDialog alertDialog;
     private final BroadcastReceiver RetrunActivateStatusReceiver = new RetrunActivateStatusReceiver();
     private final IntentFilter RetrunActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_ACTIVATE);
     private Boolean Licensestatusfalg;
+    private final BroadcastReceiver RetrunReadActivateStatusReceiver = new RetrunReadActivateStatusReceiver();
+    private final IntentFilter RetrunReadActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,16 +50,19 @@ public class LicenseKey extends Activity {
 
         initComponent();
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunReadActivateStatusReceiver, RetrunReadActivateStatusFilter);
 
     }
     private void initComponent()
     {
         btn_clear = (Button)findViewById(R.id.btn_clear);
         btn_submit = (Button)findViewById(R.id.btn_submit);
+        btn_unactivate = (Button)findViewById(R.id.btn_unactivate);
         et_license_key = (TextView)findViewById(R.id.et_license_key);
         et_status = (TextView)findViewById(R.id.et_status);
         btn_submit.setOnClickListener(ButtonListenser);
         btn_clear.setOnClickListener(ButtonListenser);
+        btn_unactivate.setOnClickListener(ButtonListenser);
 
         String licensekey = SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, "");
         if(licensekey!=null)
@@ -65,15 +71,6 @@ public class LicenseKey extends Activity {
         }
         String avticavateStatus =  SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
         et_status.setText(avticavateStatus);
-        /*Licensestatusfalg = NewScanActivity.Licensestatusfalg;
-        if(Licensestatusfalg)
-        {
-            et_status.setText("Activated");
-        }
-        else
-        {
-            et_status.setText("Function is locked.");
-        }*/
     }
 
 
@@ -96,6 +93,7 @@ public class LicenseKey extends Activity {
     public void onDestroy() {
         super.onDestroy();
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunReadActivateStatusReceiver);
     }
 
     /*
@@ -213,6 +211,15 @@ public class LicenseKey extends Activity {
                 case R.id.btn_clear:
                     et_license_key.setText("");
                     break;
+                case R.id.btn_unactivate:
+                    et_license_key.setText("");
+                    SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey,"");
+                    String filterdata = "000000000000000000000000";
+                    byte data[] = hexToBytes(filterdata);
+                    Intent ActivateStateKeyset = new Intent(NIRScanSDK.ACTION_ACTIVATE_STATE);
+                    ActivateStateKeyset.putExtra(NIRScanSDK.ACTIVATE_STATE_KEY, data);
+                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(ActivateStateKeyset);
+                    break;
             }
         }
     };
@@ -237,6 +244,23 @@ public class LicenseKey extends Activity {
             {
                 et_status.setText("Activated");
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, et_license_key.getText().toString());
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
+            }
+            else
+            {
+                et_status.setText("Function is locked.");
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Function is locked.");
+            }
+        }
+    }
+    //for unactivate to get status
+    public class RetrunReadActivateStatusReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            byte state[] = intent.getByteArrayExtra(NIRScanSDK.RETURN_READ_ACTIVATE_STATE);
+            if(state[0] == 1)
+            {
+                et_status.setText("Activated");
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, "Activated.");
             }
             else
