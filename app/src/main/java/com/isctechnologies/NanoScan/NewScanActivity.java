@@ -65,6 +65,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -2087,6 +2088,7 @@ public class NewScanActivity extends Activity {
         int []bufscanType = new int[1];
         byte[]bufnumSections = new byte[1];
         int []pga = new int[1];
+        String newdate = "";
 
         String CSV[][] = new String[35][15];
         for (int i = 0; i < 35; i++)
@@ -2103,7 +2105,7 @@ public class NewScanActivity extends Activity {
         if(function == 4 && btn_reference.isChecked())
         {
             configname = "Reference";
-            Calendar cal = Calendar.getInstance();
+           /* Calendar cal = Calendar.getInstance();
             int year = cal.get(Calendar.YEAR);
             int month=cal.get(Calendar.MONTH);
             int date=cal.get(Calendar.DATE);
@@ -2115,7 +2117,16 @@ public class NewScanActivity extends Activity {
             refday[2] = date;
             refday[3] = hour;
             refday[4] = minute;
-            refday[5] = second;
+            refday[5] = second;*/
+
+            Date datetime = new Date();
+            SimpleDateFormat format = new SimpleDateFormat("MM/dd/yy-HH:mm:ss");
+            newdate = format.format(datetime);
+            CSV[19][4] = newdate;
+        }
+        else
+        {
+            CSV[19][4] = refday[1] + "/"+ refday[2] + "/"+ refday[0] + "-" + refday[3] + ":" + refday[4] + ":" + refday[5];
         }
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
@@ -2194,7 +2205,7 @@ public class NewScanActivity extends Activity {
             index = width[0];
             CSV[17][4] = widthnm[index] + "nm";
             CSV[18][4] = numrepeat[0] + "";
-            CSV[19][4] = refday[1] + "/"+ refday[2] + "/"+ refday[0] + "-" + refday[3] + ":" + refday[4] + ":" + refday[5];
+
 
             //Scan Configuration
             CSV[23][0] = "Scan Type:,";
