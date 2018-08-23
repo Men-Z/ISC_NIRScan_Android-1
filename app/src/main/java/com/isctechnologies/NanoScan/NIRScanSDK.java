@@ -450,6 +450,14 @@ public class NIRScanSDK {
                     gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData, true);
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.DEVICE_UUID) == 0) {
                     NanoGattCharacteristic.mBleGattCharUUID = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_LAMP_MODE) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicLampMode = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_LAMP_DELAY_TIME) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicLampDelayTime = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SET_PGA) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSetPGA = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SET_SCAN_AVERAGE) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSetScanAverage = gattCharacteristic;
                 }
             }
         }
@@ -619,6 +627,18 @@ public class NIRScanSDK {
         writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand, index);
         System.out.println("__BT_SERVICE: quickset");
     }
+
+    public static void setPGA(byte[] index) {
+
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSetPGA, index);
+        System.out.println("__BT_SERVICE setPGA");
+    }
+    public static void setLampTime(byte[] index) {
+
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicLampDelayTime, index);
+        System.out.println("__BT_SERVICE setLampTime");
+    }
+
 
     public static void writeScanConfig(byte[] index) {
 
@@ -1234,6 +1254,10 @@ public class NIRScanSDK {
         public static BluetoothGattCharacteristic mBleGattCharacteristicWriteScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharacteristicReturnWriteScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharUUID;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicLampMode;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicLampDelayTime;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicSetPGA;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicSetScanAverage;
 
         public NanoGattCharacteristic() {
         }
@@ -1294,6 +1318,10 @@ public class NIRScanSDK {
         public static final UUID GSDIS_WRITE_SCANCONFIG_DATA = UUID.fromString("43484142-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RETURN_WRITE_SCANCONFIG_DATA = UUID.fromString("43484143-444C-5020-4E49-52204E616E6F");
         public static final UUID DEVICE_UUID = UUID.fromString("00002A23-0000-1000-8000-00805F9B34FB");
+        public static final UUID GSDIS_LAMP_MODE = UUID.fromString("43484144-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_LAMP_DELAY_TIME = UUID.fromString("43484145-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_SET_PGA = UUID.fromString("43484146-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_SET_SCAN_AVERAGE = UUID.fromString("43484147-444C-5020-4E49-52204E616E6F");
 
         public NanoGATT() {
         }

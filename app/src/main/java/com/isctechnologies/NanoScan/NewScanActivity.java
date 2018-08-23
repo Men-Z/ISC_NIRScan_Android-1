@@ -396,7 +396,9 @@ public class NewScanActivity extends Activity {
         btn_lamp = (ToggleButton) findViewById(R.id.btn_lamp);
         et_lamptime = (EditText) findViewById(R.id.et_prefix_lamp);
         et_pga = (EditText) findViewById(R.id.et_pga);
+        et_pga.setOnEditorActionListener(et_pga_listenser);
         et_repead = (EditText) findViewById(R.id.et_repeat);
+        et_repead.setOnEditorActionListener(et_repead_listenser);
         btn_continuous_stop.setOnClickListener(stop_continous_listenser);
 
         //quickset------------------------------------------------------
@@ -544,7 +546,7 @@ public class NewScanActivity extends Activity {
                             controlLamp(0);
                         }
 
-                        controlPGA();
+                        //controlPGA();
                         controlRepeat();
 
                         Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN); calProgress.setVisibility(View.VISIBLE);
@@ -3261,6 +3263,13 @@ public class NewScanActivity extends Activity {
         EnableLinearComponet(layout);
         layout = (LinearLayout) findViewById(R.id.ly_conf_manual);
         EnableLinearComponet(layout);
+        if(btn_scan_mode.isChecked() == false)
+        {
+            btn_lamp.setEnabled(false);
+            et_repead.setEnabled(false);
+            et_pga.setEnabled(false);
+            et_lamptime.setEnabled(true);
+        }
         //quick set ----------------------------------
         layout = (LinearLayout) findViewById(R.id.ll_prefix_quickset);
         EnableLinearComponet(layout);
@@ -4020,4 +4029,37 @@ public class NewScanActivity extends Activity {
         btn_normal.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
         function = 1;
     }
+
+    private EditText.OnEditorActionListener et_pga_listenser = new EditText.OnEditorActionListener()
+    {
+
+        @Override
+        public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    actionId == EditorInfo.IME_ACTION_DONE ||
+                    event.getAction() == KeyEvent.ACTION_DOWN &&
+                            event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                if( checkValidPga()==true)
+                {
+                    controlPGA();
+                    return false;
+                }
+            }
+            return false;
+        }
+    };
+
+    private EditText.OnEditorActionListener et_repead_listenser = new EditText.OnEditorActionListener()
+    {
+
+        @Override
+        public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    actionId == EditorInfo.IME_ACTION_DONE ||
+                    event.getAction() == KeyEvent.ACTION_DOWN &&
+                            event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+            }
+            return false;
+        }
+    };
 }

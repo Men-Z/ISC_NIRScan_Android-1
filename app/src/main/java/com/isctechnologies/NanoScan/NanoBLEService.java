@@ -1501,7 +1501,7 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting pga");
-                byte[] data = new byte[5];
+             /*   byte[] data = new byte[5];
                 data[0] =(byte) 0xFF;
                 data[1] =(byte) 0x72;
                 data[2] =(byte) 0x02;
@@ -1509,7 +1509,12 @@ public class NanoBLEService extends Service {
 
                 int value = intent.getIntExtra(NIRScanSDK.PGA_SET,0);
                 data[4]= (byte)( (value & 0x000000ff) );
-                NIRScanSDK.setManual(data);
+                NIRScanSDK.setManual(data);*/
+
+                int value = intent.getIntExtra(NIRScanSDK.PGA_SET,0);
+                byte[] data = new byte[1];
+                data[0]= (byte)( (value & 0x000000ff) );
+                NIRScanSDK.setPGA(data);
             }
         };
 
@@ -1552,7 +1557,7 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting Lamp time");
-                byte[] data = new byte[8];
+               /* byte[] data = new byte[8];
                 data[0] =(byte) 0xFF;
                 data[1] =(byte) 0x74;
                 data[2] =(byte) 0x02;
@@ -1562,7 +1567,14 @@ public class NanoBLEService extends Service {
                 data[5] = (byte)(value>>8);
                 data[6] = (byte)(value>>16);
                 data[7] = (byte)(value>>24);
-                NIRScanSDK.setManual(data);
+                NIRScanSDK.setManual(data);*/
+                byte[] data = new byte[4];
+                int value = intent.getIntExtra(NIRScanSDK.LAMP_TIME,0);
+                data[0] = (byte)value;
+                data[1] = (byte)(value>>8);
+                data[2] = (byte)(value>>16);
+                data[3] = (byte)(value>>24);
+                NIRScanSDK.setLampTime(data);
             }
         };
 
