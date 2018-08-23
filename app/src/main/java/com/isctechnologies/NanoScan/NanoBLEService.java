@@ -1470,29 +1470,22 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting Lamp");
-                byte[] data = new byte[6];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x71;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x02;
+                byte[] data = new byte[1];
 
                 int value = intent.getIntExtra(NIRScanSDK.LAMP_ON_OFF,0);
-                if(value == 1)
+                if(value == 1) //on---1
                 {
-                    data[4] =(byte) 0x01;
-                    data[5] =(byte) 0x01;
+                    data[0] =(byte) 0x01;
                 }
-                else if(value == 2)//close lamp
+                else if(value == 0)//Auto----0
                 {
-                    data[4] =(byte) 0x00;
-                    data[5] =(byte) 0x00;
+                    data[0] =(byte) 0x00;
                 }
-                else
+                else//off ---2
                 {
-                    data[4] =(byte) 0x01;
-                    data[5] =(byte) 0x00;
+                    data[0] =(byte) 0x02;
                 }
-                NIRScanSDK.Quickset(data,100);
+                NIRScanSDK.setLampMode(data);
             }
         };
 

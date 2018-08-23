@@ -643,6 +643,17 @@ public class NIRScanSDK {
         writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicLampDelayTime, index);
         System.out.println("__BT_SERVICE setLampTime");
     }
+    public static void setLampMode(byte[] index) {
+
+        try {
+            Thread.sleep(200);
+        }catch (Exception e)
+        {
+
+        };
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicLampMode, index);
+        System.out.println("__BT_SERVICE setLampMode");
+    }
     public static void setScanAverage(byte[] index) {
 
         try {

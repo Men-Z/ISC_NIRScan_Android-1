@@ -477,7 +477,8 @@ public class NewScanActivity extends Activity {
                     et_repead.setEnabled(true);
                     et_pga.setEnabled(true);
                     et_lamptime.setEnabled(false);
-                    controlManul(0);//open manual
+                    btn_lamp.setChecked(true);//開燈 變MANUAL
+                    //controlLamp(1);//開燈 變MANUAL
 
                 }
                 else
@@ -488,10 +489,8 @@ public class NewScanActivity extends Activity {
                     et_lamptime.setEnabled(true);
                     btn_lamp.setChecked(false);
 
-                    controlLamp(2);
-                    controlLamp(0);
-
-                    controlManul(1);//close manual
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設回AUTO
                 }
             }
         });
@@ -502,12 +501,13 @@ public class NewScanActivity extends Activity {
 
                 if(btn_lamp.getText().toString().equals("Off"))// off->On
                 {
-                    controlLamp(1);
+                    controlLamp(1);//開燈
                 }
                 else
                 {
-                    controlLamp(2);//reset
-                    controlLamp(0);//close lamp
+                    controlLamp(0);//關燈
+                    controlLamp(2);//設回AUTO
+                    //controlManul(1);//close manual
                 }
 
 
@@ -539,11 +539,11 @@ public class NewScanActivity extends Activity {
                         btn_scan.setText(getString(R.string.scanning));
                         if(btn_lamp.isChecked())
                         {
-                            controlLamp(1);
+                            controlLamp(1);//開燈
                         }
                         else
                         {
-                            controlLamp(0);
+                            controlLamp(2);//關燈
                         }
 
                         Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN); calProgress.setVisibility(View.VISIBLE);
@@ -625,9 +625,10 @@ public class NewScanActivity extends Activity {
             public void onClick(View view) {
                 if(function == 3 && btn_scan_mode.isChecked())//manul->normal
                 {
-                    controlLamp(2);
-                    controlLamp(0);
-                    controlManul(1);//close manual
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設回AUTO
+
+                   // controlManul(1);//close manual
                 }
                 findViewById(R.id.layout_normal).setVisibility(View.VISIBLE);
                 findViewById(R.id.layout_manual).setVisibility(View.GONE);
@@ -685,9 +686,10 @@ public class NewScanActivity extends Activity {
             public void onClick(View view) {
                 if(function == 3 && btn_scan_mode.isChecked())//manul->quickset
                 {
-                    controlLamp(2);
-                    controlLamp(0);
-                    controlManul(1);//close manual
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設回AUTO
+
+                    //controlManul(1);//close manual
                 }
 
                 findViewById(R.id.layout_quickset).setVisibility(View.VISIBLE);
@@ -711,10 +713,11 @@ public class NewScanActivity extends Activity {
             public void onClick(View view) {
                 if(function == 3 && btn_scan_mode.isChecked())//manul->quickset
                 {
-                    controlLamp(2);
-                    controlLamp(0);
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設為AUTO
 
-                    controlManul(1);//close manual
+
+                   // controlManul(1);//close manual
                 }
 
                 findViewById(R.id.layout_maintain).setVisibility(View.VISIBLE);
