@@ -546,11 +546,13 @@ public class NewScanActivity extends Activity {
                             controlLamp(0);
                         }
 
-                        //controlPGA();
-                        controlRepeat();
-
                         Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN); calProgress.setVisibility(View.VISIBLE);
                         calProgress.setVisibility(View.VISIBLE);
+                        try {
+                            Thread.sleep(500);
+                        }catch (Exception e)
+                        {
+                        };
                         LocalBroadcastManager.getInstance(mContext).sendBroadcast(scan);
                         startTime = System.currentTimeMillis();
 
@@ -2764,19 +2766,32 @@ public class NewScanActivity extends Activity {
     }
     private Boolean checkValidRepeat()
     {
-        int value = Integer.parseInt(et_repead.getText().toString());
-        if(value>=1&&value<=100)
+        try
         {
-            return true;
+            int value = Integer.parseInt(et_repead.getText().toString());
+            if(value>=1&&value<=50)
+            {
+                return true;
+            }
         }
+        catch (NumberFormatException ex)
+        {
+        }
+
         return false;
     }
     private Boolean checkValidPga()
     {
-        int value = Integer.parseInt(et_pga.getText().toString());
-        if(value==1 || value == 2 || value == 4 || value==8 || value==16 || value==32 ||value==64)
+        try
         {
-            return true;
+            int value = Integer.parseInt(et_pga.getText().toString());
+            if(value==1 || value == 2 || value == 4 || value==8 || value==16 || value==32 ||value==64)
+            {
+                return true;
+            }
+        }
+        catch (NumberFormatException ex)
+        {
         }
         return false;
     }
@@ -4030,6 +4045,7 @@ public class NewScanActivity extends Activity {
         function = 1;
     }
 
+
     private EditText.OnEditorActionListener et_pga_listenser = new EditText.OnEditorActionListener()
     {
 
@@ -4058,6 +4074,12 @@ public class NewScanActivity extends Activity {
                     actionId == EditorInfo.IME_ACTION_DONE ||
                     event.getAction() == KeyEvent.ACTION_DOWN &&
                             event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                if(checkValidRepeat())
+                {
+                    controlRepeat();
+                    return false;
+                }
+
             }
             return false;
         }

@@ -1523,7 +1523,7 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting repeat");
-                byte[] data = new byte[6];
+                /*byte[] data = new byte[6];
                 data[0] =(byte) 0xFF;
                 data[1] =(byte) 0x73;
                 data[2] =(byte) 0x02;
@@ -1533,7 +1533,12 @@ public class NanoBLEService extends Service {
                // data[4]= (byte)( (value & 0x000000ff) );
                 data[4] = (byte)value;
                 data[5] = (byte)(value>>8);
-                NIRScanSDK.setManual(data);
+                NIRScanSDK.setManual(data);*/
+                byte[] data = new byte[1];
+
+                int value = intent.getIntExtra(NIRScanSDK.REPEAT_SET,0);
+                data[0]= (byte)( (value & 0x000000ff) );
+                NIRScanSDK.setScanAverage(data);
             }
         };
 

@@ -629,7 +629,12 @@ public class NIRScanSDK {
     }
 
     public static void setPGA(byte[] index) {
+        try {
+            Thread.sleep(100);
+        }catch (Exception e)
+        {
 
+        };
         writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSetPGA, index);
         System.out.println("__BT_SERVICE setPGA");
     }
@@ -638,6 +643,18 @@ public class NIRScanSDK {
         writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicLampDelayTime, index);
         System.out.println("__BT_SERVICE setLampTime");
     }
+    public static void setScanAverage(byte[] index) {
+
+        try {
+            Thread.sleep(100);
+        }catch (Exception e)
+        {
+
+        };
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSetScanAverage, index);
+        System.out.println("__BT_SERVICE setScanAverage");
+    }
+
 
 
     public static void writeScanConfig(byte[] index) {
