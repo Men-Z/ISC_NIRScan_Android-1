@@ -458,6 +458,8 @@ public class NIRScanSDK {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSetPGA = gattCharacteristic;
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SET_SCAN_AVERAGE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSetScanAverage = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SAVE_REFERENCE) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSaveReference = gattCharacteristic;
                 }
             }
         }
@@ -664,6 +666,12 @@ public class NIRScanSDK {
         };
         writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSetScanAverage, index);
         System.out.println("__BT_SERVICE setScanAverage");
+    }
+
+    public static void SaveReference(byte[] index) {
+
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSaveReference, index);
+        System.out.println("__BT_SERVICE SaveReference");
     }
 
 
@@ -1286,6 +1294,7 @@ public class NIRScanSDK {
         public static BluetoothGattCharacteristic mBleGattCharacteristicLampDelayTime;
         public static BluetoothGattCharacteristic mBleGattCharacteristicSetPGA;
         public static BluetoothGattCharacteristic mBleGattCharacteristicSetScanAverage;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicSaveReference;
 
         public NanoGattCharacteristic() {
         }
@@ -1350,6 +1359,7 @@ public class NIRScanSDK {
         public static final UUID GSDIS_LAMP_DELAY_TIME = UUID.fromString("43484145-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_SET_PGA = UUID.fromString("43484146-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_SET_SCAN_AVERAGE = UUID.fromString("43484147-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_SAVE_REFERENCE = UUID.fromString("43484132-444C-5020-4E49-52204E616E6F");
 
         public NanoGATT() {
         }

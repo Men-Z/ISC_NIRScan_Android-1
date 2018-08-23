@@ -1592,13 +1592,9 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Save Reference");
-                byte[] data = new byte[5];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x7B;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x01;
-                data[4] =(byte) 0x01;
-                NIRScanSDK.Quickset(data,0);// delay
+                byte[] data = new byte[1];
+                data[0] =(byte) 0x5A;
+                NIRScanSDK.SaveReference(data);// delay
             }
         };
 

@@ -98,6 +98,7 @@ public class NewScanActivity extends Activity {
     static {
         System.loadLibrary("native-lib");
     }
+    //region JNI SPEC LIB function
     public static native int GetMaxPatternJNI(int scan_type,int start_nm,int end_nm, int width_index, int num_repeat,byte SpectrumCalCoefficients[]);
     public native int dlpSpecScanInterpReference(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[], double wavelength[],int intensity[],int uncalibratedIntensity[]);
     public static native int dlpSpecScanReadConfiguration(byte ConfigData[],int scanType[],int scanConfigIndex[],byte[] scanConfigSerialNumber,byte configName[],byte bufnumSections[],  byte sectionScanType[],
@@ -112,8 +113,10 @@ public class NewScanActivity extends Activity {
                                                   int lampintensity[],double shift_vector_coff[],double pixel_coff[],int day[]);
     public native int dlpSpecScanInterpReferenceInfo(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[],int refsystemp[],int refsyshumidity[],
                                                      int reflampintensity[],int numpattren[],int width[],int numrepeat[],int refday[]);
+    //endregion
 
 
+    //region parameter
     private static Context mContext;
 
     private ProgressDialog barProgressDialog;
@@ -127,7 +130,9 @@ public class NewScanActivity extends Activity {
     private ArrayList<Entry> mReflectanceFloat;
     private ArrayList<Entry> mReferenceFloat;
     private ArrayList<Float> mWavelengthFloat;
+    //endregion
 
+    //region broadcast parameter
     private final BroadcastReceiver scanDataReadyReceiver = new scanDataReadyReceiver();
     private final BroadcastReceiver refReadyReceiver = new refReadyReceiver();
     private final BroadcastReceiver notifyCompleteReceiver = new notifyCompleteReceiver();
@@ -158,7 +163,9 @@ public class NewScanActivity extends Activity {
     private final IntentFilter scanConfFilter = new IntentFilter(NIRScanSDK.SCAN_CONF_DATA);
     private final IntentFilter RetrunActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_ACTIVATE);
     private final IntentFilter  ReturnCurrentScanConfigurationDataFilter = new IntentFilter(NIRScanSDK.RETURN_CURRENT_CONFIG_DATA);
+    //endregion
 
+    //region parameter
     private ProgressBar calProgress;
     private NIRScanSDK.ScanResults results;
     private EditText filePrefix;
@@ -275,6 +282,7 @@ public class NewScanActivity extends Activity {
 
     private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
     private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
+    //endregion
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -378,6 +386,7 @@ public class NewScanActivity extends Activity {
             }
         }
 
+        //region Set up UI elements and event handlers
         //Set up UI elements and event handlers
         filePrefix = (EditText) findViewById(R.id.et_prefix);
         //btn_os = (ToggleButton) findViewById(R.id.btn_saveOS);
@@ -453,6 +462,7 @@ public class NewScanActivity extends Activity {
         et_repead.setEnabled(false);
         et_pga.setEnabled(false);
         et_lamptime.setEnabled(false);
+        //endregion
 
         et_lamptime.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -739,6 +749,7 @@ public class NewScanActivity extends Activity {
         Intent gattServiceIntent = new Intent(this, NanoBLEService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+        //region Register all needed broadcast receivers
         //Register all needed broadcast receivers
         LocalBroadcastManager.getInstance(mContext).registerReceiver(scanDataReadyReceiver, scanDataReadyFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(refReadyReceiver, refReadyFilter);
@@ -758,6 +769,7 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(getUUIDReceiver, new IntentFilter(NIRScanSDK.SEND_DEVICE_UUID));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(getBatteryReceiver, new IntentFilter(NIRScanSDK.SEND_BATTERY));
         //LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
+        //endregion
 
         //----------------------------------------------------------------
     }
@@ -770,18 +782,10 @@ public class NewScanActivity extends Activity {
         alertDialogBuilder.setNegativeButton(getResources().getString(R.string.yes_i_know), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface arg0, int arg1) {
-
-                ReferenceConfig(NIRScanConfigNumRepeats);
-                ReferenceConfig(NIRScanConfigNumSections);
-                ReferenceConfig(NIRScanConfigType);
-                ReferenceConfig(NIRScanConfigWidth);
-                ReferenceConfig(NIRScanConfigStart_nm);
-                ReferenceConfig(NIRScanConfigEnd_nm);
-                ReferenceConfig(NIRScanConfigNumPattern);
-                ReferenceConfig(NIRScanConfigExposureTime);
-                ReferenceConfig(NIRScanConfigSet);
+                calProgress.setVisibility(View.VISIBLE);
+                SetReferenceParameter();
                 alertDialog.dismiss();
-                ReferenceConfigSaveSuccess();
+                //ReferenceConfigSaveSuccess();
             }
         });
 
@@ -2798,337 +2802,7 @@ public class NewScanActivity extends Activity {
         }
         return false;
     }
-
-    private void quickset(int index)
-    {
-        Intent quickset = new Intent(NIRScanSDK.ACTION_QUICK_SET);
-        switch (index)
-        {
-            case NIRScanConfigType://may have five value for slew type
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x81;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;//payload length
-                data[4] = (byte) scan_method_index;//0:column 1:hadamard
-                //data[4] = (byte) 0x01;//0:column 1:hadamard
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case  NIRScanConfigWidth:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x85;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) scan_width_index;//2:2.34,3:3.54...
-                //data[4] = (byte) 0x05;//2:2.34,3:3.54...
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigSet:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8A;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigStart_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF; //Command Start Flag
-                data[1] = (byte) 0x83; //Command
-                data[2] = (byte) 0x02; //Command Group
-                data[3] = (byte) 0x02; //Payload length
-                int start_nm_value = Integer.parseInt(et_spec_start.getText().toString());
-                data[4] = (byte)(start_nm_value); //Payload
-                data[5] = (byte)(start_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigEnd_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x84;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int end_nm_value = Integer.parseInt(et_spec_end.getText().toString());
-                data[4] = (byte)(end_nm_value);
-                data[5] = (byte)(end_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumPattern:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x86;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int num_pattern_value = Integer.parseInt(et_res.getText().toString());
-                data[4] = (byte) num_pattern_value;
-                data[5] = (byte)(num_pattern_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigNumRepeats:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x87;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                int num_repeat_value = Integer.parseInt(et_aver_scan.getText().toString());
-                data[4] = (byte) num_repeat_value;
-                data[5] = (byte)(num_repeat_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumSections:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8C;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigExposureTime:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8D;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) exposure_time_index;
-                data[5] = (byte)(exposure_time_index>>8);
-               // data[4] = (byte) 5;
-               // data[5] = (byte)(5>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigSave:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-
-                data[1] = (byte) 0x8B;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigName:
-            {
-                byte data[] = new byte[7];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x89;
-                data[2] = (byte) 0x02;
-                String isoString = "gty";
-                byte[] midbytes=isoString.getBytes();
-                data[3] = (byte) 0x03;
-                data[4] = midbytes[0];
-                data[5] = midbytes[1];
-                data[6] = midbytes[2];
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigIndex:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x82;
-                data[2] = (byte) 0x02;
-                int len = ScanConfigList.size();
-                int configindex = ScanConfigList.get(len-1).getScanConfigIndex()+1;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) configindex;
-                data[5] = (byte) (configindex>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigSerialNumber:
-            {
-                byte data[] = new byte[11];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x88;
-                data[2] = (byte) 0x02;
-                String SerialNumber = activeConf.getScanConfigSerialNumber();
-                byte[] SerialNumberbytes=SerialNumber.getBytes();
-                data[3] = SerialNumberbytes[0];
-                data[4] = SerialNumberbytes[1];
-                data[5] = SerialNumberbytes[2];
-                data[6] = SerialNumberbytes[3];
-                data[7] = SerialNumberbytes[4];
-                data[8] = SerialNumberbytes[5];
-                data[9] = SerialNumberbytes[6];
-                data[10] = SerialNumberbytes[7];
-            }
-        }
-
-    }
-
-    private void ReferenceConfig(int index)
-    {
-        Intent quickset = new Intent(NIRScanSDK.ACTION_QUICK_SET);
-        switch (index)
-        {
-            case NIRScanConfigType://may have five value for slew type
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x81;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;//payload length
-                data[4] = (byte) 0x00;//0:column 1:hadamard
-                //data[4] = (byte) 0x01;//0:column 1:hadamard
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case  NIRScanConfigWidth:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x85;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 6;//2:2.34,3:3.54...
-                //data[4] = (byte) 0x05;//2:2.34,3:3.54...
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigSet:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8A;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigStart_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF; //Command Start Flag
-                data[1] = (byte) 0x83; //Command
-                data[2] = (byte) 0x02; //Command Group
-                data[3] = (byte) 0x02; //Payload length
-                int start_nm_value = 900;
-                data[4] = (byte)(start_nm_value); //Payload
-                data[5] = (byte)(start_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigEnd_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x84;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int end_nm_value = 1700;
-                data[4] = (byte)(end_nm_value);
-                data[5] = (byte)(end_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumPattern:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x86;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int num_pattern_value = 228;
-                data[4] = (byte) num_pattern_value;
-                data[5] = (byte)(num_pattern_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigNumRepeats:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x87;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                int num_repeat_value = 6;
-                data[4] = (byte) num_repeat_value;
-                data[5] = (byte)(num_repeat_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumSections:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8C;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigExposureTime:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8D;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) 0;
-                data[5] = (byte)(0>>8);
-                // data[4] = (byte) 5;
-                // data[5] = (byte)(5>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-        }
-
-    }
+    
     //Add get storedConfSize ---------------------------------------------
     private class  ScanConfSizeReceiver extends BroadcastReceiver {
 
@@ -3383,16 +3057,6 @@ public class NewScanActivity extends Activity {
                 btn_set_value.setClickable(false);
                 btn_scan.setClickable(false);
                 calProgress.setVisibility(view.VISIBLE);
-               /* quickset(NIRScanConfigNumRepeats);
-                quickset(NIRScanConfigNumSections);
-                quickset(NIRScanConfigType);
-                quickset(NIRScanConfigWidth);
-                quickset(NIRScanConfigStart_nm);
-                quickset(NIRScanConfigEnd_nm);
-                quickset(NIRScanConfigNumPattern);
-                quickset(NIRScanConfigExposureTime);
-                quickset(NIRScanConfigSet);
-                Dialog_Pane_Delay("Finish","Complete set config.");*/
                 SetScanConfiguration();
             }
 
@@ -3784,7 +3448,14 @@ public class NewScanActivity extends Activity {
             calProgress.setVisibility(View.GONE);
             if(flag)
             {
-                Dialog_Pane("Success","Complete to set configuration.");
+                if(function == 4) //reference
+                {
+                    ReferenceConfigSaveSuccess();
+                }
+                else
+                {
+                    Dialog_Pane("Success","Complete to set configuration.");
+                }
             }
             else
             {
@@ -4087,4 +3758,72 @@ public class NewScanActivity extends Activity {
             return false;
         }
     };
+
+    public void SetReferenceParameter()
+    {
+        int scanType=0;
+        int scanConfigIndex=0;
+        int numRepeat=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        byte numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionExposureTime = new int[5];
+        byte[] EXTRA_DATA = new byte[155];
+        //transfer config name to byte
+        String isoString ="Reference";
+        int name_size = isoString.length();
+        byte[] ConfigNamebytes=isoString.getBytes();
+        for(int i=0;i<name_size;i++)
+        {
+            configName[i] = ConfigNamebytes[i];
+        }
+        scanType = 2;
+        //transfer SerialNumber to byte
+        String SerialNumber = "12345678";
+        byte[] SerialNumberbytes=SerialNumber.getBytes();
+        int SerialNumber_size = SerialNumber.length();
+        for(int i=0;i<SerialNumber_size;i++)
+        {
+            scanConfigSerialNumber[i] = SerialNumberbytes[i];
+        }
+        scanConfigIndex = 255;
+        numSections =(byte) 1;
+        numRepeat = 6;
+
+        for(int i=0;i<numSections;i++)
+        {
+            sectionScanType[i] = (byte)0;
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWavelengthStartNm[i] =900;
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWavelengthEndNm[i] =1700;
+        }
+        et_res.setText("228");
+        for(int i=0;i<numSections;i++)
+        {
+            sectionNumPatterns[i] =Integer.parseInt(et_res.getText().toString());
+        }
+        spin_scan_width.setSelection(4);
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWidthPx[i] = (byte)(spin_scan_width.getSelectedItemPosition()+2);
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionExposureTime[i] =0;
+        }
+        dlpSpecScanWriteConfiguration(scanType,scanConfigIndex,numRepeat,scanConfigSerialNumber,configName,numSections,
+                sectionScanType, sectionWidthPx, sectionWavelengthStartNm, sectionWavelengthEndNm, sectionNumPatterns,
+                sectionExposureTime,EXTRA_DATA);
+        SetConfig(EXTRA_DATA);
+    }
 }
