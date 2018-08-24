@@ -485,9 +485,8 @@ public class NewScanActivity extends Activity {
                     et_repead.setEnabled(false);
                     et_pga.setEnabled(false);
                     et_lamptime.setEnabled(true);
-                    btn_lamp.setChecked(false);
-
-                    controlLamp(2);//關燈
+                    btn_lamp.setChecked(false);//關燈
+                    //controlLamp(2);//關燈
                     controlLamp(0);//設回AUTO
                 }
             }
@@ -535,7 +534,7 @@ public class NewScanActivity extends Activity {
                     {
                         DisableAllComponent();
                         btn_scan.setText(getString(R.string.scanning));
-                      
+
                         calProgress.setVisibility(View.VISIBLE);
                         try {
                             Thread.sleep(500);
