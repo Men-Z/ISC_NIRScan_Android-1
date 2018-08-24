@@ -86,18 +86,14 @@ public class NIRScanSDK {
     public static final String EXTRA_REF_CAL_COEFF_SIZE_PACKET = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_REF_CAL_COEFF_SIZE_PACKET";
     public static final String EXTRA_REF_CAL_MATRIX_SIZE_PACKET = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_REF_CAL_MATRIX_SIZE_PACKET";
     public static final String SCAN_MODE_ON_OFF = "scan.mode.on.off";
-    public static final String ACTION_SCAN_MODE = "action.scan.mode";
     public static final String LAMP_ON_OFF = "lamp.on.off";
     public static final String ACTION_LAMP = "action.lamp";
     public static final String PGA_SET = "pga.set";
     public static final String ACTION_PGA = "action.pga";
     public static final String REPEAT_SET = "repeat.set";
     public static final String ACTION_REPEAT = "action.repeat";
-    public static final String INTER_SCAN = "inter.scan";
-    public static final String ACTION_INTER_SCAN = "action.inter.scan";
     public static final String LAMP_TIME = "lamp.time";
     public static final String ACTION_LAMP_TIME = "action.lamp.time";
-    public static final String ACTION_QUICK_SET = "action.quick.set";
     public static final String QUICK_SET_VALUE = "action.quick.set.value";
     public static final String ACTION_SAVE_REFERENCE = "action.save.reference";
     public static final String EXTRA_SPEC_COEF_DATA = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_SPEC_COEF_DATA";
@@ -431,8 +427,6 @@ public class NIRScanSDK {
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SER_SCAN_DATA_STRUCT) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetSerialScanDataStruct = gattCharacteristic;
                     gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetSerialScanDataStruct, true);
-                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_INTERNAL_COMMAND) == 0) {
-                    com.isctechnologies.NanoScan.NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand = gattCharacteristic;
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_ACTIVATE_STATE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicCharacteristicActivateState = gattCharacteristic;
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_RETURN_ACTIVATE_STATE) == 0) {
@@ -605,29 +599,6 @@ public class NIRScanSDK {
 
     public static void requestSerializedScanDataStruct(byte[] scanIndex) {
         writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqSerialScanDataStruct, scanIndex);
-    }
-
-    public static void setManual(byte[] index) {
-        try {
-            Thread.sleep(500);
-        }catch (Exception e)
-        {
-
-        }
-        writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand, index);
-        System.out.println("__BT_SERVICE");
-    }
-
-    public static void Quickset(byte[] index,long delaytime) {
-
-        try {
-            Thread.sleep(delaytime);
-        }catch (Exception e)
-        {
-
-        }
-        writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand, index);
-        System.out.println("__BT_SERVICE: quickset");
     }
 
     public static void setPGA(byte[] index) {
@@ -1282,7 +1253,6 @@ public class NIRScanSDK {
         public static BluetoothGattCharacteristic mBleGattCharGSDISRetPacketFormatVersion;
         public static BluetoothGattCharacteristic mBleGattCharGSDISReqSerialScanDataStruct;
         public static BluetoothGattCharacteristic mBleGattCharGSDISRetSerialScanDataStruct;
-        public static BluetoothGattCharacteristic mBleGattCharacteristicInternalCommand;
         public static BluetoothGattCharacteristic mBleGattCharacteristicCharacteristicActivateState;
         public static BluetoothGattCharacteristic mBleGattCharacteristicCharacteristicActivateStateNotify;
         public static BluetoothGattCharacteristic mBleGattCharacteristicReadCurrentScanConfigurationData;
@@ -1347,7 +1317,6 @@ public class NIRScanSDK {
         public static final UUID GSDIS_RET_PKT_FMT_VER = UUID.fromString("43484126-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_REQ_SER_SCAN_DATA_STRUCT = UUID.fromString("43484127-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RET_SER_SCAN_DATA_STRUCT = UUID.fromString("43484128-444C-5020-4E49-52204E616E6F");
-        public static final UUID GSDIS_INTERNAL_COMMAND = UUID.fromString("4348410B-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_ACTIVATE_STATE = UUID.fromString("43484130-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RETURN_ACTIVATE_STATE = UUID.fromString("43484131-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_READ_CURRENT_SCANCONFIG_DATA = UUID.fromString("43484140-444C-5020-4E49-52204E616E6F");

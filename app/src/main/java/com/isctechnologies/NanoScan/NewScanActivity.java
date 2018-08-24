@@ -535,23 +535,14 @@ public class NewScanActivity extends Activity {
                     {
                         DisableAllComponent();
                         btn_scan.setText(getString(R.string.scanning));
-                        if(btn_lamp.isChecked())
-                        {
-                            controlLamp(1);//開燈
-                        }
-                        else
-                        {
-                            controlLamp(2);//關燈
-                        }
-
-                        Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN);
+                      
                         calProgress.setVisibility(View.VISIBLE);
                         try {
                             Thread.sleep(500);
                         }catch (Exception e)
                         {
                         };
-                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(scan);
+                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.START_SCAN));
                         startTime = System.currentTimeMillis();
 
                     }
