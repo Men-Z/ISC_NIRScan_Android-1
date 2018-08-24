@@ -54,6 +54,8 @@ public class ScanConfActivity extends Activity {
     public static Boolean saveConfig =false;
     public static ArrayList<NIRScanSDK.ScanConfiguration> bufconfigs = new ArrayList<>();
     public static ArrayList<String>ScanConfigName = new ArrayList<>();
+    public static ArrayList <byte []> bufEXTRADATA_fromScanConfActivity = new ArrayList<>();
+    private ArrayList <byte []> EXTRADATA = new ArrayList<>();
 
     @Override
     public void finishActivity(int requestCode) {
@@ -150,6 +152,7 @@ public class ScanConfActivity extends Activity {
         if(saveConfig == true)
         {
             configs.clear();
+            EXTRADATA.clear();
             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_SCAN_CONF));
             saveConfig = false;
         }
@@ -199,9 +202,11 @@ public class ScanConfActivity extends Activity {
         }
         if (id == android.R.id.home) {
             bufconfigs.clear();
+            bufEXTRADATA_fromScanConfActivity.clear();
             for(int i=0;i<configs.size();i++)
             {
                 bufconfigs.add(configs.get(i));
+                bufEXTRADATA_fromScanConfActivity.add(EXTRADATA.get(i));
             }
             this.finish();
         }
@@ -217,6 +222,7 @@ public class ScanConfActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             NIRScanSDK.ScanConfiguration scanConf = NewScanActivity.GetScanConfiguration(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
+            EXTRADATA.add(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
             lv_configs = (ListView) findViewById(R.id.lv_configs);
 
             lv_configs.setOnItemClickListener(new AdapterView.OnItemClickListener() {

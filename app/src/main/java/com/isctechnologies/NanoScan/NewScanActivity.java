@@ -189,13 +189,15 @@ public class NewScanActivity extends Activity {
     private NIRScanSDK.ScanConfiguration activeConf;
 
     private Menu mMenu;
-    private int numberOfaverage;
     private int receivedConfSize=-1;
     private int storedConfSize;
     private BroadcastReceiver scanConfSizeReceiver=  new ScanConfSizeReceiver();
     private BroadcastReceiver getActiveScanConfReceiver;
     private ArrayList<NIRScanSDK.ScanConfiguration> ScanConfigList = new ArrayList<NIRScanSDK.ScanConfiguration>();
     private ArrayList<NIRScanSDK.ScanConfiguration> bufScanConfigList = new ArrayList<NIRScanSDK.ScanConfiguration>();//from scan configurations
+    private byte ActiveEXTRA[];
+    private ArrayList <byte []> EXTRADATA_List = new ArrayList<>();
+    private ArrayList <byte []> bufEXTRADATA_List = new ArrayList<>();
     int index;
     private Long startTime;
     private Long EndTime;
@@ -224,20 +226,6 @@ public class NewScanActivity extends Activity {
     private EditText et_pga;
     private EditText et_repead;
     private int function = 1; //1->normal,2->quickset,3->manual,4->maintain
-    private static final int NIRScanConfigType=1;
-    private static final int NIRScanConfigWidth=5;
-    private static final int NIRScanConfigSet=10;
-    private static final int NIRScanConfigSave=11;
-    private static final int NIRScanConfigIndex=2;
-    private static final int NIRScanConfigStart_nm=3;
-    private static final int NIRScanConfigEnd_nm=4;
-    private static final int NIRScanConfigNumPattern=6;
-    private static final int NIRScanConfigNumRepeats=7;
-    private static final int NIRScanConfigSerialNumber=8;
-    private static final int NIRScanConfigName=9;
-    private static final int NIRScanConfigNumSections=12;
-    private static final int NIRScanConfigExposureTime=13;
-    private static final int NIRScsnConfigEraseAllConfig=14;
 
     //quick set-------------------------------------------------------
     private Spinner spin_scan_method;
@@ -556,7 +544,7 @@ public class NewScanActivity extends Activity {
                             controlLamp(2);//關燈
                         }
 
-                        Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN); calProgress.setVisibility(View.VISIBLE);
+                        Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN);
                         calProgress.setVisibility(View.VISIBLE);
                         try {
                             Thread.sleep(500);
@@ -864,13 +852,16 @@ public class NewScanActivity extends Activity {
     private void GetActiveConfigOnResume()
     {
         bufScanConfigList = ScanConfActivity.bufconfigs;//from scan configuration
+        bufEXTRADATA_List = ScanConfActivity.bufEXTRADATA_fromScanConfActivity;
         int storenum = bufScanConfigList.size();
         if(storenum!=ScanConfigList.size())
         {
             ScanConfigList.clear();
+            EXTRADATA_List.clear();
             for(int i=0;i<bufScanConfigList.size();i++)
             {
                 ScanConfigList.add(bufScanConfigList.get(i));
+                EXTRADATA_List.add(bufEXTRADATA_List.get(i));
             }
         }
 
@@ -880,6 +871,7 @@ public class NewScanActivity extends Activity {
              if(index == ScanConfigIndextoByte )
              {
                  activeConf = ScanConfigList.get(i);
+                 ActiveEXTRA = EXTRADATA_List.get(i);
                  tv_scan_conf.setText(activeConf.getConfigName());
                  tv_scan_conf_manual.setText(activeConf.getConfigName());
              }
@@ -2561,6 +2553,7 @@ public class NewScanActivity extends Activity {
 
     }
 
+    Boolean saveReference = false;
     private void SaveReferenceDialog() {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
         alertDialogBuilder.setTitle("Finish");
@@ -2572,7 +2565,9 @@ public class NewScanActivity extends Activity {
             public void onClick(DialogInterface arg0, int arg1) {
                 alertDialog.dismiss();
                 SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "ReferenceScan");
-                finish();
+                SetConfig(ActiveEXTRA);
+                saveReference = true;
+                //finish();
             }
         });
 
@@ -2652,6 +2647,7 @@ public class NewScanActivity extends Activity {
             {
                scanConf = GetOneSectionScanConfiguration(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
             }
+            EXTRADATA_List.add(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
             ScanConfigList.add(scanConf);
 
             if (storedConfSize>0 && receivedConfSize==0) {
@@ -2685,6 +2681,7 @@ public class NewScanActivity extends Activity {
                     if(index == ScanConfigIndextoByte )
                     {
                         activeConf = ScanConfigList.get(i);
+                        ActiveEXTRA = EXTRADATA_List.get(i);
                     }
                 }
 
@@ -2752,12 +2749,6 @@ public class NewScanActivity extends Activity {
         lampclose.putExtra(NIRScanSDK.LAMP_ON_OFF, value);
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(lampclose);
     }
-    private void controlManul(int value)
-    {
-        Intent scan_mode = new Intent(NIRScanSDK.ACTION_SCAN_MODE);
-        scan_mode.putExtra(NIRScanSDK.SCAN_MODE_ON_OFF, value);
-        LocalBroadcastManager.getInstance(mContext).sendBroadcast(scan_mode);
-    }
     private void controlPGA()
     {
         Intent setpga = new Intent(NIRScanSDK.ACTION_PGA);
@@ -2802,7 +2793,7 @@ public class NewScanActivity extends Activity {
         }
         return false;
     }
-    
+
     //Add get storedConfSize ---------------------------------------------
     private class  ScanConfSizeReceiver extends BroadcastReceiver {
 
@@ -3448,7 +3439,12 @@ public class NewScanActivity extends Activity {
             calProgress.setVisibility(View.GONE);
             if(flag)
             {
-                if(function == 4) //reference
+                if(saveReference == true)
+                {
+                    saveReference = false;
+                    finish();
+                }
+                else if(function == 4) //reference
                 {
                     ReferenceConfigSaveSuccess();
                 }
@@ -3459,7 +3455,17 @@ public class NewScanActivity extends Activity {
             }
             else
             {
-                Dialog_Pane("Fail","Set configuration fail.");
+
+                if(saveReference == true)
+                {
+                    Dialog_Pane("Fail","Restore config fail, should re-open device.");
+                    saveReference = false;
+                    finish();
+                }
+                else
+                {
+                    Dialog_Pane("Fail","Set configuration fail.");
+                }
             }
         }
     }
