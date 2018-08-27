@@ -20,8 +20,10 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.storage.StorageManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.PagerAdapter;
@@ -62,6 +64,7 @@ import com.opencsv.CSVWriter;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -808,7 +811,7 @@ public class NewScanActivity extends Activity {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
         alertDialogBuilder.setTitle("Error");
         alertDialogBuilder.setCancelable(false);
-        alertDialogBuilder.setMessage("Scan repeat range is 1~100.");
+        alertDialogBuilder.setMessage("Scan repeat range is 1~50.");
 
         alertDialogBuilder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
@@ -2099,19 +2102,6 @@ public class NewScanActivity extends Activity {
         if(function == 4 && btn_reference.isChecked())
         {
             configname = "Reference";
-           /* Calendar cal = Calendar.getInstance();
-            int year = cal.get(Calendar.YEAR);
-            int month=cal.get(Calendar.MONTH);
-            int date=cal.get(Calendar.DATE);
-            int hour=cal.get(Calendar.HOUR);
-            int minute=cal.get(Calendar.MINUTE);
-            int second=cal.get(Calendar.SECOND);
-            refday[0] = year;
-            refday[1] = month;
-            refday[2] = date;
-            refday[3] = hour;
-            refday[4] = minute;
-            refday[5] = second;*/
 
             Date datetime = new Date();
             SimpleDateFormat format = new SimpleDateFormat("MM/dd/yy-HH:mm:ss");
@@ -2126,10 +2116,14 @@ public class NewScanActivity extends Activity {
         if (prefix.equals("")) {
             prefix = "ISC";
         }
-
+        if(android.os.Environment.getExternalStorageState().equals(android.os. Environment.MEDIA_REMOVED))
+        {
+            Toast.makeText(NewScanActivity.this , "No SD card." , Toast.LENGTH_SHORT ).show();
+            return ;
+        }
+        //-------------------------------------------------------------------------
         if (saveOS) {
             String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix+"_" + configname + "_" + currentTime + ".csv";
-
 
             // Section information field names
             CSV[0][0] = "***ISC NIRScan Scan Result ***,";
