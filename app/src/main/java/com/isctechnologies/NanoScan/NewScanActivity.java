@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -2121,9 +2122,29 @@ public class NewScanActivity extends Activity {
             Toast.makeText(NewScanActivity.this , "No SD card." , Toast.LENGTH_SHORT ).show();
             return ;
         }
+        //--------------------------------------
+        File mSDFile  = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        File mFile = new File(mSDFile.getParent() + "/" + mSDFile.getName() + "/ISC_Report");
+        //若沒有檔案儲存路徑時則建立此檔案路徑
+        if(!mFile.exists())
+        {
+            mFile.mkdirs();
+        }
+        mFile.setExecutable(true);
+        mFile.setReadable(true);
+        mFile.setWritable(true);
+
+        // initiate media scan and put the new things into the path array to
+        // make the scanner aware of the location and the files you want to see
+        MediaScannerConnection.scanFile(this, new String[] {mFile.toString()}, null, null);
+
         //-------------------------------------------------------------------------
         if (saveOS) {
-            String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix+"_" + configname + "_" + currentTime + ".csv";
+            //String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix+"_" + configname + "_" + currentTime + ".csv";
+            String csvOS = mSDFile.getParent() + "/" + mSDFile.getName() + "/ISC_Report/" + prefix+"_" + configname + "_" + currentTime + ".csv";
+            // initiate media scan and put the new things into the path array to
+            // make the scanner aware of the location and the files you want to see
+            MediaScannerConnection.scanFile(this, new String[] {csvOS}, null, null);
 
             // Section information field names
             CSV[0][0] = "***ISC NIRScan Scan Result ***,";
