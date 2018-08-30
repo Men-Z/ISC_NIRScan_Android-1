@@ -1,9 +1,15 @@
 package com.isctechnologies.NanoScan;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -18,14 +24,38 @@ public class ScanListMain  extends Activity {
     private ImageButton main_connect;
     private ImageButton main_info;
     private ImageButton main_setting;
+    private static final int REQUEST_WRITE_STORAGE = 112;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_page);
         mContext = this;
         initComponent();
 
+        LocationManager locationManager
+                = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+//        boolean gps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+//        boolean network = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            boolean hasPermission = (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+            if (!hasPermission) {
+                ActivityCompat.requestPermissions(ScanListMain.this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.INTERNET, Manifest.permission.ACCESS_COARSE_LOCATION
+                                , Manifest.permission.ACCESS_FINE_LOCATION
+                        },
+                        REQUEST_WRITE_STORAGE);
+            }
+        }
+
+       /* int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);*/
 
     }
+
 
     private void initComponent()
     {

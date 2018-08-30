@@ -1,5 +1,6 @@
 package com.isctechnologies.NanoScan;
 
+import android.Manifest;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -13,6 +14,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,6 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 /**
  * Activity for scanning for advertising Nano devices over BLE
@@ -34,7 +38,7 @@ public class ScanActivity extends Activity {
 
     private Handler mHandler;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothLeScanner mBluetoothLeScanner;
+    public BluetoothLeScanner mBluetoothLeScanner;
     private static final String DEVICE_NAME = "NIR";
     private ArrayList<NIRScanSDK.NanoDevice> nanoDeviceList = new ArrayList<>();
     private NanoScanAdapter nanoScanAdapter;
@@ -55,9 +59,14 @@ public class ScanActivity extends Activity {
         }
         ListView lv_nanoDevices = (ListView) findViewById(R.id.lv_nanoDevices);
 
+//--------------------------------------------------------------------------------
+       /* int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);*/
         //Start scanning for devices that match DEVICE_NAME
         final BluetoothManager bluetoothManager =
-                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+               (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
 
@@ -144,6 +153,13 @@ public class ScanActivity extends Activity {
                 }
             }
         }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            System.out.println("BLE// onScanFailed");
+            Log.e("Scan Failed", "Error Code: " + errorCode);
+        }
+
     };
 
 
@@ -190,6 +206,7 @@ public class ScanActivity extends Activity {
             }
         }
     }
+
 
     /**
      * Custom adapter that holds {@link NIRScanSDK.NanoDevice} objects to be used in a listview.
