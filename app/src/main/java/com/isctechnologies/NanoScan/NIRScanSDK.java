@@ -86,18 +86,14 @@ public class NIRScanSDK {
     public static final String EXTRA_REF_CAL_COEFF_SIZE_PACKET = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_REF_CAL_COEFF_SIZE_PACKET";
     public static final String EXTRA_REF_CAL_MATRIX_SIZE_PACKET = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_REF_CAL_MATRIX_SIZE_PACKET";
     public static final String SCAN_MODE_ON_OFF = "scan.mode.on.off";
-    public static final String ACTION_SCAN_MODE = "action.scan.mode";
     public static final String LAMP_ON_OFF = "lamp.on.off";
     public static final String ACTION_LAMP = "action.lamp";
     public static final String PGA_SET = "pga.set";
     public static final String ACTION_PGA = "action.pga";
     public static final String REPEAT_SET = "repeat.set";
     public static final String ACTION_REPEAT = "action.repeat";
-    public static final String INTER_SCAN = "inter.scan";
-    public static final String ACTION_INTER_SCAN = "action.inter.scan";
     public static final String LAMP_TIME = "lamp.time";
     public static final String ACTION_LAMP_TIME = "action.lamp.time";
-    public static final String ACTION_QUICK_SET = "action.quick.set";
     public static final String QUICK_SET_VALUE = "action.quick.set.value";
     public static final String ACTION_SAVE_REFERENCE = "action.save.reference";
     public static final String EXTRA_SPEC_COEF_DATA = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_SPEC_COEF_DATA";
@@ -117,6 +113,12 @@ public class NIRScanSDK {
     public static final String WRITE_SCAN_CONFIG_VALUE = "write.scan.config.value";
     public static final String ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS = "action.return.write.scan.config.status";
     public static final String RETURN_WRITE_SCAN_CONFIG_STATUS = "return.write.scan.config.status";
+    public static final String GET_UUID = "com.isctechnologies.NanoScan.bluetooth.le.GET_UUID";
+    public static final String SEND_DEVICE_UUID = "com.isctechnologies.NanoScan.bluetooth.le.SEND_DEVICE_UUID";
+    public static final String EXTRA_DEVICE_UUID = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_DEVICE_UUID";
+    public static final String GET_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.GET_BATTERY";
+    public static final String SEND_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.SEND_BATTERY";
+    public static final String EXTRA_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_BATTERY";
 
     public NIRScanSDK() {
     }
@@ -290,6 +292,9 @@ public class NIRScanSDK {
         } else if(NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData == null) {
             Log.e("NIRScanSDK", "Failed to enumerate UUID:" + NanoGATT.GSDIS_RETURN_WRITE_SCANCONFIG_DATA.toString());
             return true;
+        } else if(NanoGattCharacteristic.mBleGattCharUUID == null) {
+            Log.e("NIRScanSDK", "Failed to enumerate UUID:" + NanoGATT.DEVICE_UUID.toString());
+            return true;
         }else {
             return false;
         }
@@ -422,8 +427,6 @@ public class NIRScanSDK {
                 } else if(gattCharacteristic.getUuid().compareTo(NIRScanSDK.NanoGATT.GSDIS_RET_SER_SCAN_DATA_STRUCT) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetSerialScanDataStruct = gattCharacteristic;
                     gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISRetSerialScanDataStruct, true);
-                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_INTERNAL_COMMAND) == 0) {
-                    com.isctechnologies.NanoScan.NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand = gattCharacteristic;
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_ACTIVATE_STATE) == 0) {
                     NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicCharacteristicActivateState = gattCharacteristic;
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_RETURN_ACTIVATE_STATE) == 0) {
@@ -439,6 +442,18 @@ public class NIRScanSDK {
                 }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_RETURN_WRITE_SCANCONFIG_DATA) == 0) {
                     NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData = gattCharacteristic;
                     gatt.setCharacteristicNotification(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicReturnWriteScanConfigurationData, true);
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.DEVICE_UUID) == 0) {
+                    NanoGattCharacteristic.mBleGattCharUUID = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_LAMP_MODE) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicLampMode = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_LAMP_DELAY_TIME) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicLampDelayTime = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SET_PGA) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSetPGA = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SET_SCAN_AVERAGE) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSetScanAverage = gattCharacteristic;
+                }else if(gattCharacteristic.getUuid().compareTo(NanoGATT.GSDIS_SAVE_REFERENCE) == 0) {
+                    NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicSaveReference = gattCharacteristic;
                 }
             }
         }
@@ -513,6 +528,10 @@ public class NIRScanSDK {
         readCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharDISManufName);
     }
 
+    public static void getUUID() {
+        readCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharUUID);
+    }
+
     public static void getBatteryLevel() {
         readCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharBASBattLevel);
     }
@@ -582,28 +601,51 @@ public class NIRScanSDK {
         writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharGSDISReqSerialScanDataStruct, scanIndex);
     }
 
-    public static void setManual(byte[] index) {
+    public static void setPGA(byte[] index) {
         try {
-            Thread.sleep(500);
+            Thread.sleep(100);
         }catch (Exception e)
         {
 
-        }
-        writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand, index);
-        System.out.println("__BT_SERVICE");
+        };
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSetPGA, index);
+        System.out.println("__BT_SERVICE setPGA");
     }
+    public static void setLampTime(byte[] index) {
 
-    public static void Quickset(byte[] index,long delaytime) {
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicLampDelayTime, index);
+        System.out.println("__BT_SERVICE setLampTime");
+    }
+    public static void setLampMode(byte[] index) {
 
         try {
-            Thread.sleep(delaytime);
+            Thread.sleep(200);
         }catch (Exception e)
         {
 
-        }
-        writeCharacteristic(NIRScanSDK.NanoGattCharacteristic.mBleGattCharacteristicInternalCommand, index);
-        System.out.println("__BT_SERVICE: quickset");
+        };
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicLampMode, index);
+        System.out.println("__BT_SERVICE setLampMode");
     }
+    public static void setScanAverage(byte[] index) {
+
+        try {
+            Thread.sleep(100);
+        }catch (Exception e)
+        {
+
+        };
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSetScanAverage, index);
+        System.out.println("__BT_SERVICE setScanAverage");
+    }
+
+    public static void SaveReference(byte[] index) {
+
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicSaveReference, index);
+        System.out.println("__BT_SERVICE SaveReference");
+    }
+
+
 
     public static void writeScanConfig(byte[] index) {
 
@@ -621,6 +663,26 @@ public class NIRScanSDK {
 
         writeCharacteristic(NanoGattCharacteristic.mBleGattCharacteristicCharacteristicActivateState, index);
         System.out.println("__BT_SERVICE: Set ActivateState key");
+        if(index.length==12)
+        {
+            Boolean unactivate = true;
+            for(int i=0;i<12;i++)
+            {
+                if(index[i] !=0)
+                {
+                    unactivate = false;
+                }
+            }
+            if(unactivate)
+            {
+               try {
+                Thread.sleep(200);
+               }catch (Exception e){
+
+               }
+                ReadActiveState();
+            }
+        }
     }
     public static void ReadCurrentConfig(byte[] index) {
 
@@ -1191,13 +1253,18 @@ public class NIRScanSDK {
         public static BluetoothGattCharacteristic mBleGattCharGSDISRetPacketFormatVersion;
         public static BluetoothGattCharacteristic mBleGattCharGSDISReqSerialScanDataStruct;
         public static BluetoothGattCharacteristic mBleGattCharGSDISRetSerialScanDataStruct;
-        public static BluetoothGattCharacteristic mBleGattCharacteristicInternalCommand;
         public static BluetoothGattCharacteristic mBleGattCharacteristicCharacteristicActivateState;
         public static BluetoothGattCharacteristic mBleGattCharacteristicCharacteristicActivateStateNotify;
         public static BluetoothGattCharacteristic mBleGattCharacteristicReadCurrentScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharacteristicReturnCurrentScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharacteristicWriteScanConfigurationData;
         public static BluetoothGattCharacteristic mBleGattCharacteristicReturnWriteScanConfigurationData;
+        public static BluetoothGattCharacteristic mBleGattCharUUID;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicLampMode;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicLampDelayTime;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicSetPGA;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicSetScanAverage;
+        public static BluetoothGattCharacteristic mBleGattCharacteristicSaveReference;
 
         public NanoGattCharacteristic() {
         }
@@ -1250,13 +1317,18 @@ public class NIRScanSDK {
         public static final UUID GSDIS_RET_PKT_FMT_VER = UUID.fromString("43484126-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_REQ_SER_SCAN_DATA_STRUCT = UUID.fromString("43484127-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RET_SER_SCAN_DATA_STRUCT = UUID.fromString("43484128-444C-5020-4E49-52204E616E6F");
-        public static final UUID GSDIS_INTERNAL_COMMAND = UUID.fromString("4348410B-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_ACTIVATE_STATE = UUID.fromString("43484130-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RETURN_ACTIVATE_STATE = UUID.fromString("43484131-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_READ_CURRENT_SCANCONFIG_DATA = UUID.fromString("43484140-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RETURN_CURRENT_SCANCONFIG_DATA = UUID.fromString("43484141-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_WRITE_SCANCONFIG_DATA = UUID.fromString("43484142-444C-5020-4E49-52204E616E6F");
         public static final UUID GSDIS_RETURN_WRITE_SCANCONFIG_DATA = UUID.fromString("43484143-444C-5020-4E49-52204E616E6F");
+        public static final UUID DEVICE_UUID = UUID.fromString("00002A23-0000-1000-8000-00805F9B34FB");
+        public static final UUID GSDIS_LAMP_MODE = UUID.fromString("43484144-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_LAMP_DELAY_TIME = UUID.fromString("43484145-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_SET_PGA = UUID.fromString("43484146-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_SET_SCAN_AVERAGE = UUID.fromString("43484147-444C-5020-4E49-52204E616E6F");
+        public static final UUID GSDIS_SAVE_REFERENCE = UUID.fromString("43484132-444C-5020-4E49-52204E616E6F");
 
         public NanoGATT() {
         }

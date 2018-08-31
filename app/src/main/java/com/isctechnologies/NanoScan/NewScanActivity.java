@@ -19,9 +19,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.storage.StorageManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.PagerAdapter;
@@ -61,14 +64,21 @@ import com.opencsv.CSVWriter;
 
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.isctechnologies.NanoScan.SettingsManager.SharedPreferencesKeys.preferredDeviceModel;
 
 /**
  * Activity controlling the Nano once it is connected
@@ -92,6 +102,7 @@ public class NewScanActivity extends Activity {
     static {
         System.loadLibrary("native-lib");
     }
+    //region JNI SPEC LIB function
     public static native int GetMaxPatternJNI(int scan_type,int start_nm,int end_nm, int width_index, int num_repeat,byte SpectrumCalCoefficients[]);
     public native int dlpSpecScanInterpReference(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[], double wavelength[],int intensity[],int uncalibratedIntensity[]);
     public static native int dlpSpecScanReadConfiguration(byte ConfigData[],int scanType[],int scanConfigIndex[],byte[] scanConfigSerialNumber,byte configName[],byte bufnumSections[],  byte sectionScanType[],
@@ -101,7 +112,15 @@ public class NewScanActivity extends Activity {
     public static native int dlpSpecScanWriteConfiguration(int scanType,int scanConfigIndex,int numRepeat,byte[] scanConfigSerialNumber,byte[] configName,byte numSections,
                                                            byte[] sectionScanType, byte[] sectionWidthPx, int[] sectionWavelengthStartNm, int[] sectionWavelengthEndNm, int[] sectionNumPatterns
             , int[] sectionExposureTime,byte[] EXTRA_DATA);
+    public native int dlpSpecScanInterpConfigInfo(byte scanData[],int scanType[],byte[] scanConfigSerialNumber,byte configName[],byte bufnumSections[],  byte sectionScanType[],
+                                                  byte sectionWidthPx[], int sectionWavelengthStartNm[], int sectionWavelengthEndNm[], int sectionNumPatterns[], int sectionNumRepeats[], int sectionExposureTime[],int pga[],int systemp[],int syshumidity[],
+                                                  int lampintensity[],double shift_vector_coff[],double pixel_coff[],int day[]);
+    public native int dlpSpecScanInterpReferenceInfo(byte scanData[], byte CalCoefficients[],byte RefCalMatrix[],int refsystemp[],int refsyshumidity[],
+                                                     int reflampintensity[],int numpattren[],int width[],int numrepeat[],int refday[]);
+    //endregion
 
+
+    //region parameter
     private static Context mContext;
 
     private ProgressDialog barProgressDialog;
@@ -115,7 +134,9 @@ public class NewScanActivity extends Activity {
     private ArrayList<Entry> mReflectanceFloat;
     private ArrayList<Entry> mReferenceFloat;
     private ArrayList<Float> mWavelengthFloat;
+    //endregion
 
+    //region broadcast parameter
     private final BroadcastReceiver scanDataReadyReceiver = new scanDataReadyReceiver();
     private final BroadcastReceiver refReadyReceiver = new refReadyReceiver();
     private final BroadcastReceiver notifyCompleteReceiver = new notifyCompleteReceiver();
@@ -128,6 +149,10 @@ public class NewScanActivity extends Activity {
     private final IntentFilter RetrunReadActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
     private final BroadcastReceiver RetrunActivateStatusReceiver = new RetrunActivateStatusReceiver();
     private final BroadcastReceiver ReturnCurrentScanConfigurationDataReceiver = new ReturnCurrentScanConfigurationDataReceiver();
+    private final BroadcastReceiver mInfoReceiver = new mInfoReceiver();
+    private final BroadcastReceiver getUUIDReceiver = new getUUIDReceiver();
+    private final BroadcastReceiver getBatteryReceiver = new getBatteryReceiver();
+
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(NIRScanSDK.SCAN_DATA);
     private final IntentFilter refReadyFilter = new IntentFilter(NIRScanSDK.REF_CONF_DATA);
@@ -142,7 +167,9 @@ public class NewScanActivity extends Activity {
     private final IntentFilter scanConfFilter = new IntentFilter(NIRScanSDK.SCAN_CONF_DATA);
     private final IntentFilter RetrunActivateStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_ACTIVATE);
     private final IntentFilter  ReturnCurrentScanConfigurationDataFilter = new IntentFilter(NIRScanSDK.RETURN_CURRENT_CONFIG_DATA);
+    //endregion
 
+    //region parameter
     private ProgressBar calProgress;
     private NIRScanSDK.ScanResults results;
     private EditText filePrefix;
@@ -166,13 +193,15 @@ public class NewScanActivity extends Activity {
     private NIRScanSDK.ScanConfiguration activeConf;
 
     private Menu mMenu;
-    private int numberOfaverage;
     private int receivedConfSize=-1;
     private int storedConfSize;
     private BroadcastReceiver scanConfSizeReceiver=  new ScanConfSizeReceiver();
     private BroadcastReceiver getActiveScanConfReceiver;
     private ArrayList<NIRScanSDK.ScanConfiguration> ScanConfigList = new ArrayList<NIRScanSDK.ScanConfiguration>();
     private ArrayList<NIRScanSDK.ScanConfiguration> bufScanConfigList = new ArrayList<NIRScanSDK.ScanConfiguration>();//from scan configurations
+    private byte ActiveEXTRA[];
+    private ArrayList <byte []> EXTRADATA_List = new ArrayList<>();
+    private ArrayList <byte []> bufEXTRADATA_List = new ArrayList<>();
     int index;
     private Long startTime;
     private Long EndTime;
@@ -201,20 +230,6 @@ public class NewScanActivity extends Activity {
     private EditText et_pga;
     private EditText et_repead;
     private int function = 1; //1->normal,2->quickset,3->manual,4->maintain
-    private static final int NIRScanConfigType=1;
-    private static final int NIRScanConfigWidth=5;
-    private static final int NIRScanConfigSet=10;
-    private static final int NIRScanConfigSave=11;
-    private static final int NIRScanConfigIndex=2;
-    private static final int NIRScanConfigStart_nm=3;
-    private static final int NIRScanConfigEnd_nm=4;
-    private static final int NIRScanConfigNumPattern=6;
-    private static final int NIRScanConfigNumRepeats=7;
-    private static final int NIRScanConfigSerialNumber=8;
-    private static final int NIRScanConfigName=9;
-    private static final int NIRScanConfigNumSections=12;
-    private static final int NIRScanConfigExposureTime=13;
-    private static final int NIRScsnConfigEraseAllConfig=14;
 
     //quick set-------------------------------------------------------
     private Spinner spin_scan_method;
@@ -259,6 +274,7 @@ public class NewScanActivity extends Activity {
 
     private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
     private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
+    //endregion
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -362,6 +378,7 @@ public class NewScanActivity extends Activity {
             }
         }
 
+        //region Set up UI elements and event handlers
         //Set up UI elements and event handlers
         filePrefix = (EditText) findViewById(R.id.et_prefix);
         //btn_os = (ToggleButton) findViewById(R.id.btn_saveOS);
@@ -380,7 +397,9 @@ public class NewScanActivity extends Activity {
         btn_lamp = (ToggleButton) findViewById(R.id.btn_lamp);
         et_lamptime = (EditText) findViewById(R.id.et_prefix_lamp);
         et_pga = (EditText) findViewById(R.id.et_pga);
+        et_pga.setOnEditorActionListener(et_pga_listenser);
         et_repead = (EditText) findViewById(R.id.et_repeat);
+        et_repead.setOnEditorActionListener(et_repead_listenser);
         btn_continuous_stop.setOnClickListener(stop_continous_listenser);
 
         //quickset------------------------------------------------------
@@ -435,6 +454,7 @@ public class NewScanActivity extends Activity {
         et_repead.setEnabled(false);
         et_pga.setEnabled(false);
         et_lamptime.setEnabled(false);
+        //endregion
 
         et_lamptime.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -459,7 +479,8 @@ public class NewScanActivity extends Activity {
                     et_repead.setEnabled(true);
                     et_pga.setEnabled(true);
                     et_lamptime.setEnabled(false);
-                    controlManul(0);//open manual
+                    btn_lamp.setChecked(true);//開燈 變MANUAL
+                    //controlLamp(1);//開燈 變MANUAL
 
                 }
                 else
@@ -468,12 +489,9 @@ public class NewScanActivity extends Activity {
                     et_repead.setEnabled(false);
                     et_pga.setEnabled(false);
                     et_lamptime.setEnabled(true);
-                    btn_lamp.setChecked(false);
-
-                    controlLamp(2);
-                    controlLamp(0);
-
-                    controlManul(1);//close manual
+                    btn_lamp.setChecked(false);//關燈
+                    //controlLamp(2);//關燈
+                    controlLamp(0);//設回AUTO
                 }
             }
         });
@@ -484,12 +502,13 @@ public class NewScanActivity extends Activity {
 
                 if(btn_lamp.getText().toString().equals("Off"))// off->On
                 {
-                    controlLamp(1);
+                    controlLamp(1);//開燈
                 }
                 else
                 {
-                    controlLamp(2);//reset
-                    controlLamp(0);//close lamp
+                    controlLamp(0);//關燈
+                    controlLamp(2);//設回AUTO
+                    //controlManul(1);//close manual
                 }
 
 
@@ -519,21 +538,14 @@ public class NewScanActivity extends Activity {
                     {
                         DisableAllComponent();
                         btn_scan.setText(getString(R.string.scanning));
-                        if(btn_lamp.isChecked())
-                        {
-                            controlLamp(1);
-                        }
-                        else
-                        {
-                            controlLamp(0);
-                        }
 
-                        controlPGA();
-                        controlRepeat();
-
-                        Intent scan = new Intent(NIRScanSDK.ACTION_INTER_SCAN); calProgress.setVisibility(View.VISIBLE);
                         calProgress.setVisibility(View.VISIBLE);
-                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(scan);
+                        try {
+                            Thread.sleep(500);
+                        }catch (Exception e)
+                        {
+                        };
+                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.START_SCAN));
                         startTime = System.currentTimeMillis();
 
                     }
@@ -605,9 +617,10 @@ public class NewScanActivity extends Activity {
             public void onClick(View view) {
                 if(function == 3 && btn_scan_mode.isChecked())//manul->normal
                 {
-                    controlLamp(2);
-                    controlLamp(0);
-                    controlManul(1);//close manual
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設回AUTO
+
+                   // controlManul(1);//close manual
                 }
                 findViewById(R.id.layout_normal).setVisibility(View.VISIBLE);
                 findViewById(R.id.layout_manual).setVisibility(View.GONE);
@@ -665,9 +678,10 @@ public class NewScanActivity extends Activity {
             public void onClick(View view) {
                 if(function == 3 && btn_scan_mode.isChecked())//manul->quickset
                 {
-                    controlLamp(2);
-                    controlLamp(0);
-                    controlManul(1);//close manual
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設回AUTO
+
+                    //controlManul(1);//close manual
                 }
 
                 findViewById(R.id.layout_quickset).setVisibility(View.VISIBLE);
@@ -691,10 +705,11 @@ public class NewScanActivity extends Activity {
             public void onClick(View view) {
                 if(function == 3 && btn_scan_mode.isChecked())//manul->quickset
                 {
-                    controlLamp(2);
-                    controlLamp(0);
+                    controlLamp(2);//關燈
+                    controlLamp(0);//設為AUTO
 
-                    controlManul(1);//close manual
+
+                   // controlManul(1);//close manual
                 }
 
                 findViewById(R.id.layout_maintain).setVisibility(View.VISIBLE);
@@ -716,6 +731,7 @@ public class NewScanActivity extends Activity {
         Intent gattServiceIntent = new Intent(this, NanoBLEService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+        //region Register all needed broadcast receivers
         //Register all needed broadcast receivers
         LocalBroadcastManager.getInstance(mContext).registerReceiver(scanDataReadyReceiver, scanDataReadyFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(refReadyReceiver, refReadyFilter);
@@ -731,7 +747,11 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunReadActivateStatusReceiver, RetrunReadActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(mInfoReceiver, new IntentFilter(NIRScanSDK.ACTION_INFO));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(getUUIDReceiver, new IntentFilter(NIRScanSDK.SEND_DEVICE_UUID));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(getBatteryReceiver, new IntentFilter(NIRScanSDK.SEND_BATTERY));
         //LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
+        //endregion
 
         //----------------------------------------------------------------
     }
@@ -744,18 +764,10 @@ public class NewScanActivity extends Activity {
         alertDialogBuilder.setNegativeButton(getResources().getString(R.string.yes_i_know), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface arg0, int arg1) {
-
-                ReferenceConfig(NIRScanConfigNumRepeats);
-                ReferenceConfig(NIRScanConfigNumSections);
-                ReferenceConfig(NIRScanConfigType);
-                ReferenceConfig(NIRScanConfigWidth);
-                ReferenceConfig(NIRScanConfigStart_nm);
-                ReferenceConfig(NIRScanConfigEnd_nm);
-                ReferenceConfig(NIRScanConfigNumPattern);
-                ReferenceConfig(NIRScanConfigExposureTime);
-                ReferenceConfig(NIRScanConfigSet);
+                calProgress.setVisibility(View.VISIBLE);
+                SetReferenceParameter();
                 alertDialog.dismiss();
-                ReferenceConfigSaveSuccess();
+                //ReferenceConfigSaveSuccess();
             }
         });
 
@@ -800,7 +812,7 @@ public class NewScanActivity extends Activity {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
         alertDialogBuilder.setTitle("Error");
         alertDialogBuilder.setCancelable(false);
-        alertDialogBuilder.setMessage("Scan repeat range is 1~100.");
+        alertDialogBuilder.setMessage("Scan repeat range is 1~50.");
 
         alertDialogBuilder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
@@ -834,13 +846,16 @@ public class NewScanActivity extends Activity {
     private void GetActiveConfigOnResume()
     {
         bufScanConfigList = ScanConfActivity.bufconfigs;//from scan configuration
+        bufEXTRADATA_List = ScanConfActivity.bufEXTRADATA_fromScanConfActivity;
         int storenum = bufScanConfigList.size();
         if(storenum!=ScanConfigList.size())
         {
             ScanConfigList.clear();
+            EXTRADATA_List.clear();
             for(int i=0;i<bufScanConfigList.size();i++)
             {
                 ScanConfigList.add(bufScanConfigList.get(i));
+                EXTRADATA_List.add(bufEXTRADATA_List.get(i));
             }
         }
 
@@ -850,6 +865,7 @@ public class NewScanActivity extends Activity {
              if(index == ScanConfigIndextoByte )
              {
                  activeConf = ScanConfigList.get(i);
+                 ActiveEXTRA = EXTRADATA_List.get(i);
                  tv_scan_conf.setText(activeConf.getConfigName());
                  tv_scan_conf_manual.setText(activeConf.getConfigName());
              }
@@ -952,7 +968,9 @@ public class NewScanActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnCurrentScanConfigurationDataReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
-
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mInfoReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(getUUIDReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(getBatteryReceiver);
 
         mHandler.removeCallbacksAndMessages(null);
 
@@ -994,6 +1012,7 @@ public class NewScanActivity extends Activity {
             startActivity(configureIntent);
         }
         if (id == R.id.action_key) {
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunReadActivateStatusReceiver);
             Intent configureIntent = new Intent(mContext, LicenseKey.class);
             startActivity(configureIntent);
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunActivateStatusReceiver);
@@ -1655,6 +1674,10 @@ public class NewScanActivity extends Activity {
     /**
      * Custom receiver for handling scan data and setting up the graphs properly
      */
+    boolean continuous = false;
+    byte[] scanData;
+    NIRScanSDK.ReferenceCalibration ref;
+    String filetsName;
     public class scanDataReadyReceiver extends BroadcastReceiver {
 
         public void onReceive(Context context, Intent intent) {
@@ -1662,7 +1685,7 @@ public class NewScanActivity extends Activity {
             btn_scan.setText(getString(R.string.scan));
             EnableAllComponent();
             Disable_Stop_Continous_button();
-            byte[] scanData = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA);
+            scanData = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA);
 
             String scanType = intent.getStringExtra(NIRScanSDK.EXTRA_SCAN_TYPE);
             /*
@@ -1677,7 +1700,7 @@ public class NewScanActivity extends Activity {
             */
             String scanDate = intent.getStringExtra(NIRScanSDK.EXTRA_SCAN_DATE);
 
-            NIRScanSDK.ReferenceCalibration ref = NIRScanSDK.ReferenceCalibration.currentCalibration.get(0);
+            ref = NIRScanSDK.ReferenceCalibration.currentCalibration.get(0);
             //---------------------------------------------------------------------------------------------------------
             double[] wavelength = new double[700];
             int[] intensity = new int[700];
@@ -1763,12 +1786,7 @@ public class NewScanActivity extends Activity {
             tabPosition = mViewPager.getCurrentItem();
             mViewPager.setAdapter(mViewPager.getAdapter());
             mViewPager.invalidate();
-
-          /*  if (scanType.equals("00")) {
-                scanType = "Column 1";
-            } else {
-                scanType = "Hadamard";
-            }*/
+            
             //Show the right scan type------------------------------
             if(activeConf != null && activeConf.getScanType().equals("Slew")){
                 int numSections = activeConf.getSlewNumSections();
@@ -1794,22 +1812,14 @@ public class NewScanActivity extends Activity {
                    slew = slew + activeConf.getSectionNumPatterns()[i]+"%";
                 }
             }
-            //number of average----------------------------------------------------------------------------------------------
-         /*   if(function==3 && btn_scan_mode.isChecked())
-            {
-                numberOfaverage = Integer.parseInt(et_repead.getText().toString());
-            }
-            else
-            {
-                numberOfaverage =  activeConf.getSectionNumRepeats()[0];
-            }*/
+
 
             float mesureTime =(float) (EndTime - startTime)/1000;
 
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
             SimpleDateFormat filesimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault());
             String ts = simpleDateFormat.format(new Date());
-            String filetsName = filesimpleDateFormat.format(new Date());
+            filetsName = filesimpleDateFormat.format(new Date());
             ActionBar ab = getActionBar();
             if (ab != null) {
 
@@ -1822,7 +1832,7 @@ public class NewScanActivity extends Activity {
             }
 
            // boolean saveOS = btn_os.isChecked();
-            boolean continuous = false;
+
             if(function == 1)
             {
                 continuous = btn_continuous.isChecked();
@@ -1831,67 +1841,69 @@ public class NewScanActivity extends Activity {
             {
                 continuous = btn_continuous_scan_mode.isChecked();
             }
-            if(function == 4 && btn_reference.isChecked())
+
+            SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_BATTERY));
+
+        }
+    }
+    private void ScanDataResult()
+    {
+        if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.Activacatestatus, null).contains("Activated") ==false)
+        {
+            closeFunction();
+        }
+        writeCSV(scanData,filetsName, results, true,ref.getRefCalCoefficients(), ref.getRefCalMatrix());
+        if(function == 4 && btn_reference.isChecked())
+        {
+            saveReference();
+            SaveReferenceDialog();
+        }
+        //-----------------------------------------------
+
+        int interval_time = 0;
+        int repeat = 0;
+        if(function == 1)
+        {
+            interval_time = Integer.parseInt(et_normal_interval_time.getText().toString());
+            repeat = Integer.parseInt(et_normal_repeat.getText().toString()) -1;//-1 want to match scan count
+        }
+        else
+        {
+            interval_time = Integer.parseInt(scan_interval_time.getText().toString());
+            repeat = Integer.parseInt(et_repeat_quick.getText().toString()) -1;//-1 want to match scan count
+        }
+
+        if(show_finish_continous_dialog == true)
+        {
+            String content = "There were totally " + (continuous_count+1) + " scans has been performed!.";
+            Dialog_Pane("Continuous Scan Completed!",content);
+            show_finish_continous_dialog = false;
+            continuous_count = 0;
+        }
+        if (continuous) {
+            // Dialog_Pane_Bottom("aaa","bbb");
+            continuous_count ++;
+            calProgress.setVisibility(View.VISIBLE);
+            btn_scan.setText(getString(R.string.scanning));
+            DisableAllComponent();
+            Enable_Stop_Continous_button();
+            try {
+                Thread.sleep(interval_time*1000);
+            }catch (Exception e)
             {
-                saveReference();
-                SaveReferenceDialog();
+
             }
-            else
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SEND_DATA));
+            if(continuous_count == repeat || stop_continuous == true)
             {
-
-              //  writeCSV(filetsName, results, saveOS);
-
-             //   writeCSVDict(filetsName, scanType, ts, String.valueOf(minWavelength), String.valueOf(maxWavelength), String.valueOf(results.getLength()), String.valueOf(results.getLength()), Integer.toString(numberOfaverage), Float.toString(mesureTime), saveOS,slew);
-
-                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
-            }
-
-            //-----------------------------------------------
-
-            int interval_time = 0;
-            int repeat = 0;
-            if(function == 1)
-            {
-                interval_time = Integer.parseInt(et_normal_interval_time.getText().toString());
-                repeat = Integer.parseInt(et_normal_repeat.getText().toString()) -1;//-1 want to match scan count
-            }
-            else
-            {
-                interval_time = Integer.parseInt(scan_interval_time.getText().toString());
-                repeat = Integer.parseInt(et_repeat_quick.getText().toString()) -1;//-1 want to match scan count
-            }
-
-            if(show_finish_continous_dialog == true)
-            {
-                String content = "There were totally " + (continuous_count+1) + " scans has been performed!.";
-                Dialog_Pane("Continuous Scan Completed!",content);
-                show_finish_continous_dialog = false;
-                continuous_count = 0;
-            }
-            if (continuous) {
-               // Dialog_Pane_Bottom("aaa","bbb");
-                continuous_count ++;
-                calProgress.setVisibility(View.VISIBLE);
-                btn_scan.setText(getString(R.string.scanning));
-                DisableAllComponent();
-                Enable_Stop_Continous_button();
-                try {
-                    Thread.sleep(interval_time*1000);
-                }catch (Exception e)
-                {
-
-                }
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SEND_DATA));
-                if(continuous_count == repeat || stop_continuous == true)
-                {
-                   // continuous_count = 0;
-                    continuous = false;
-                    stop_continuous = false;
-                    btn_continuous_scan_mode.setChecked(false);
-                    btn_continuous.setChecked(false);
-                    show_finish_continous_dialog = true;
-                    Disable_Stop_Continous_button();
-                }
+                // continuous_count = 0;
+                continuous = false;
+                stop_continuous = false;
+                btn_continuous_scan_mode.setChecked(false);
+                btn_continuous.setChecked(false);
+                show_finish_continous_dialog = true;
+                Disable_Stop_Continous_button();
             }
         }
     }
@@ -1904,7 +1916,63 @@ public class NewScanActivity extends Activity {
             SpectrumCalCoefficients = intent.getByteArrayExtra(NIRScanSDK.EXTRA_SPEC_COEF_DATA);
             passSpectrumCalCoefficients = SpectrumCalCoefficients;
             //read current ActivateState------------------------------------------------------------------------------------
+           // readActivateState();
+            //Send broadcast to the BLE service to request device information
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_INFO));
+        }
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    String model_name="";
+    String serial_num = "";
+    String HWrev = "";
+    String Tivarev ="";
+    String Specrev = "";
+    public class mInfoReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            model_name = intent.getStringExtra(NIRScanSDK.EXTRA_MODEL_NUM);
+            serial_num = intent.getStringExtra(NIRScanSDK.EXTRA_SERIAL_NUM);
+            HWrev = intent.getStringExtra(NIRScanSDK.EXTRA_HW_REV);
+            Tivarev = intent.getStringExtra(NIRScanSDK.EXTRA_TIVA_REV);
+            Specrev = intent.getStringExtra(NIRScanSDK.EXTRA_SPECTRUM_REV);
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.GET_UUID));
+        }
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    String uuid="";
+
+    public class getUUIDReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+
+           byte buf[] = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DEVICE_UUID);
+           for(int i=0;i<buf.length;i++)
+           {
+               uuid += Integer.toHexString( 0xff & buf[i] );
+               if(i!= buf.length-1)
+               {
+                   uuid +=":";
+               }
+           }
+            //read current ActivateState------------------------------------------------------------------------------------
             readActivateState();
+        }
+    }
+    /**
+     * Custom receiver for returning the event that reference calibrations have been read
+     */
+    String battery="";
+
+    public class getBatteryReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+
+            battery = Integer.toString(intent.getIntExtra(NIRScanSDK.EXTRA_BATTERY,0));
+            ScanDataResult();
         }
     }
     /**
@@ -1945,7 +2013,12 @@ public class NewScanActivity extends Activity {
     public class notifyCompleteReceiver extends BroadcastReceiver {
 
         public void onReceive(Context context, Intent intent) {
-            if(preferredDevice.equals(ScanListMain.storeCalibration.device))
+            Boolean reference = false;
+            if(SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "Not").equals("ReferenceScan"))
+            {
+                reference = true;
+            }
+            if(preferredDevice.equals(ScanListMain.storeCalibration.device) && reference == false)
             {
                 byte[] refCoeff = ScanListMain.storeCalibration.storrefCoeff;
                 byte[] refMatrix = ScanListMain.storeCalibration.storerefMatrix;
@@ -1958,6 +2031,10 @@ public class NewScanActivity extends Activity {
             }
             else
             {
+                if(reference == true)
+                {
+                    SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "Not");
+                }
                 LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(NIRScanSDK.SET_TIME));
             }
         }
@@ -1969,22 +2046,235 @@ public class NewScanActivity extends Activity {
      * @param scanResults the {@link NIRScanSDK.ScanResults} structure to save
      * @param saveOS boolean indicating if the CSV file should be saved to the OS
      */
-    private void writeCSV(String currentTime, NIRScanSDK.ScanResults scanResults, boolean saveOS) {
+    private void writeCSV(byte[] scandata,String currentTime, NIRScanSDK.ScanResults scanResults, boolean saveOS,byte[]RefCalCoefficients,byte[]RefCalMatrix) {
 
+        int scanType=0;
+        int scanConfigIndex=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        int numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionNumRepeats = new int[5];
+        int[] sectionExposureTime = new int[5];
+        String widthnm[] ={"","","2.34","3.51","4.68","5.85","7.03","8.20","9.37","10.54","11.71","12.88","14.05","15.22","16.39","17.56","18.74"
+                ,"19.91","21.08","22.25","23.42","24.59","25.76","26.93","28.10","29.27","30.44","31.62","32.79","33.96","35.13","36.30","37.47","38.64","39.81"
+                ,"40.98","42.15","43.33","44.50","45.67","46.84","48.01","49.18","50.35","51.52","52.69","53.86","55.04","56.21","57.38","58.55","59.72","60.89"};
+        String exposureTime[] = {"0.635ms","1.27ms"," 2.54ms"," 5.08ms","15.24ms","30.48ms","60.96ms"};
+        int index = 0;
+        double temp;
+        double humidity;
+
+        int refsystemp[] =new int[1];
+        int refsyshumidity[] =new int[1];
+        int reflampintensity[] =new int[1];
+        int numpattren[] =new int[1];
+        int width[] =new int[1];
+        int numrepeat[] =new int[1];
+        int refday[] =new int[6];
+
+        int systemp[] =new int[1];
+        int syshumidity[] =new int[1];
+        int lampintensity[] =new int[1];
+        int day[] =new int[6];
+        double shift_vector_coff[] = new double[3];
+        double pixel_coff[] = new double[3];
+        //-------------------------------------------------
+        int []bufscanType = new int[1];
+        byte[]bufnumSections = new byte[1];
+        int []pga = new int[1];
+        String newdate = "";
+
+        String CSV[][] = new String[35][15];
+        for (int i = 0; i < 35; i++)
+            for (int j = 0; j < 15; j++)
+                CSV[i][j] = ",";
+        dlpSpecScanInterpConfigInfo(scandata,bufscanType,scanConfigSerialNumber,configName,bufnumSections,
+                sectionScanType,sectionWidthPx,sectionWavelengthStartNm,sectionWavelengthEndNm,sectionNumPatterns,sectionNumRepeats,sectionExposureTime,pga,systemp,syshumidity,lampintensity,
+                shift_vector_coff,pixel_coff,day);
+        dlpSpecScanInterpReferenceInfo(scandata,RefCalCoefficients,RefCalMatrix,refsystemp,refsyshumidity,reflampintensity,numpattren,width,numrepeat,refday);
+        numSections = bufnumSections[0];
+        scanType = bufscanType[0];
+        //----------------------------------------------------------------
+        String  configname = getBytetoString(configName);
+        if(function == 4 && btn_reference.isChecked())
+        {
+            configname = "Reference";
+
+            Date datetime = new Date();
+            SimpleDateFormat format = new SimpleDateFormat("MM/dd/yy-HH:mm:ss");
+            newdate = format.format(datetime);
+            CSV[19][4] = newdate;
+        }
+        else
+        {
+            CSV[19][4] = refday[1] + "/"+ refday[2] + "/"+ refday[0] + "-" + refday[3] + ":" + refday[4] + ":" + refday[5];
+        }
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
-            prefix = "Nano";
+            prefix = "ISC";
         }
+        if(android.os.Environment.getExternalStorageState().equals(android.os. Environment.MEDIA_REMOVED))
+        {
+            Toast.makeText(NewScanActivity.this , "No SD card." , Toast.LENGTH_SHORT ).show();
+            return ;
+        }
+        //--------------------------------------
+        File mSDFile  = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        File mFile = new File(mSDFile.getParent() + "/" + mSDFile.getName() + "/ISC_Report");
+        //若沒有檔案儲存路徑時則建立此檔案路徑
+        if(!mFile.exists())
+        {
+            mFile.mkdirs();
+        }
+        mFile.setExecutable(true);
+        mFile.setReadable(true);
+        mFile.setWritable(true);
 
+        // initiate media scan and put the new things into the path array to
+        // make the scanner aware of the location and the files you want to see
+        MediaScannerConnection.scanFile(this, new String[] {mFile.toString()}, null, null);
+
+        //-------------------------------------------------------------------------
         if (saveOS) {
-            String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix + currentTime + ".csv";
+            //String csvOS = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + prefix+"_" + configname + "_" + currentTime + ".csv";
+            String csvOS = mSDFile.getParent() + "/" + mSDFile.getName() + "/ISC_Report/" + prefix+"_" + configname + "_" + currentTime + ".csv";
+            // initiate media scan and put the new things into the path array to
+            // make the scanner aware of the location and the files you want to see
+            MediaScannerConnection.scanFile(this, new String[] {csvOS}, null, null);
+
+            // Section information field names
+            CSV[0][0] = "***ISC NIRScan Scan Result ***,";
+            CSV[2][0] = "---General Information---";
+            CSV[12][0] = "---Device Status Information---,";
+            CSV[12][3] = "---Reference Scan Information---";
+            CSV[22][0] = "---Scan Config Information---";
+            CSV[34][0] = "---Scan Data---";
+            //General Information
+            CSV[3][0] = "Model Number:,";
+            CSV[4][0] = "UUID:,";
+            CSV[4][2] = "Serial Number:,";
+            CSV[5][0] = "Hardware Rev:,";
+            CSV[6][0] = "Tiva Rev:,";
+            CSV[6][2] = "Spectrum Rev:,";
+            CSV[7][0] = "Shift Vector Coefficient:,";
+            CSV[8][0] = "Pixel to Wavelength Coefficient:,";
+            CSV[9][0] = "System Temp:,";
+            CSV[9][2] = "System Humidity:,";
+            CSV[10][0] = "Lamp Intensity:,";
+
+            CSV[3][1] = model_name + ",";
+            CSV[4][1] = uuid + ",";
+            CSV[4][3] = serial_num + ",";
+            CSV[5][1] = HWrev + ",";
+            CSV[6][1] = Tivarev + ",";
+            CSV[6][3] = Specrev + ",";
+
+            temp = systemp[0];
+            temp = temp/100;
+            CSV[9][1] = temp + "C" + ",";
+            humidity =  syshumidity[0];
+            humidity =  humidity/100;
+            CSV[9][3] = humidity + "%RH" + ",";
+            CSV[10][1] = lampintensity[0] + ",";
+
+            CSV[7][1] = shift_vector_coff[0] + ",";
+            CSV[7][2] = shift_vector_coff[1] + ",";
+            CSV[7][3] = shift_vector_coff[2] + ",";
+
+            CSV[8][1] = pixel_coff[0] + ",";
+            CSV[8][2] = pixel_coff[1] + ",";
+            CSV[8][3] = pixel_coff[2] + ",";
+            //Device Status Information
+            CSV[13][0] = "Battery Capacity:,";
+            CSV[13][1] = battery + "%,";
+            CSV[14][0] = "Scan TimeStamp:,";
+            CSV[14][1] = day[1] + "/"+ day[2] + "/"+ day[0] + "-" + day[3] + ":" + day[4] + ":" + day[5] + ",";
+
+            //referense info
+            CSV[13][3] = "System Temp:,";
+            CSV[14][3] = "System Humidity:,";
+            CSV[15][3] = "Lamp Intensity:,";
+            CSV[16][3] = "Sample Points:,";
+            CSV[17][3] = "Scan Resolution:,";
+            CSV[18][3] = "Number of Scans to Average:,";
+            CSV[19][3] = "Scan TimeStamp:,";
+
+            temp = refsystemp[0];
+            temp = temp/100;
+            CSV[13][4] = temp + "C";
+            humidity =  syshumidity[0];
+            humidity =  refsyshumidity[0]/100;
+            CSV[14][4] = humidity + "%RH";
+            CSV[15][4] = reflampintensity[0] +"";
+            CSV[16][4] = numpattren[0] + "pts";
+            index = width[0];
+            CSV[17][4] = widthnm[index] + "nm";
+            CSV[18][4] = numrepeat[0] + "";
+
+
+            //Scan Configuration
+            CSV[23][0] = "Scan Type:,";
+            CSV[24][0] = "Scan Config Name:,";
+            CSV[25][0] = "Section Scan Type:,";
+            CSV[26][0] = "Spectral Start:,";
+            CSV[27][0] = "Spectral End:,";
+            CSV[28][0] = "Sample Points:,";
+            CSV[29][0] = "Scan Width:,";
+            CSV[30][0] = "Exposure Time:,";
+            CSV[31][0] = "Scan Number to Average:,";
+            CSV[32][0] = "PGA Gain:,";
+
+
+
+            CSV[23][1] = scanType + " (0:Col; 1:Had; 2:Slew),";
+
+            CSV[24][1] = configname ;
+            for(int i=0;i<numSections;i++)
+            {
+                if(sectionScanType[i] ==0)
+                {
+                    CSV[25][i+1] = "Col,";
+                }
+                else
+                {
+                    CSV[25][i+1] = "Had,";
+                }
+                CSV[26][i+1] = sectionWavelengthStartNm[i] + "nm,";
+                CSV[27][i+1] = sectionWavelengthEndNm[i] + "nm,";
+                CSV[28][i+1] = sectionNumPatterns[i] + "pts,";
+                index = sectionWidthPx[i];
+                CSV[29][i+1] = widthnm[index] + "nm,";
+                index = sectionExposureTime[i];
+                CSV[30][i+1] = exposureTime[index] + ",";
+            }
+            CSV[31][1] = sectionNumRepeats[0] + ",";
+            CSV[32][1] = pga[0] + ",";
+
 
             CSVWriter writer;
             try {
                 writer = new CSVWriter(new FileWriter(csvOS), ',', CSVWriter.NO_QUOTE_CHARACTER);
                 List<String[]> data = new ArrayList<String[]>();
-                data.add(new String[]{"Wavelength,Intensity,Absorbance,Reflectance"});
 
+                String buf = "";
+                for (int i = 0; i < 34; i++)
+                {
+                    for (int j = 0; j < 15; j++)
+                    {
+                        buf += CSV[i][j];
+                        if (j == 14)
+                        {
+                            data.add(new String[]{buf});
+                        }
+                    }
+                    buf = "";
+                }
+
+                data.add(new String[]{"Wavelength,Intensity,Absorbance,Reflectance"});
                 int csvIndex;
                 for (csvIndex = 0; csvIndex < scanResults.getLength(); csvIndex++) {
                     double waves = scanResults.getWavelength()[csvIndex];
@@ -1993,12 +2283,43 @@ public class NewScanActivity extends Activity {
                     float reflect = (float) results.getUncalibratedIntensity()[csvIndex] / results.getIntensity()[csvIndex];
                     data.add(new String[]{String.valueOf(waves), String.valueOf(intens), String.valueOf(absorb), String.valueOf(reflect)});
                 }
+
                 writer.writeAll(data);
                 writer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public String getBytetoString(byte configName[]) {
+        byte[] byteChars = new byte[40];
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        byte[] var3 = byteChars;
+        int i = byteChars.length;
+
+        for(int var5 = 0; var5 < i; ++var5) {
+            byte b = var3[var5];
+            byteChars[b] = 0;
+        }
+
+        String s = null;
+
+        for(i = 0; i < configName.length; ++i) {
+            byteChars[i] = configName[i];
+            if(configName[i] == 0) {
+                break;
+            }
+
+            os.write(configName[i]);
+        }
+        try {
+            s = new String(os.toByteArray(), "UTF-8");
+        } catch (UnsupportedEncodingException var7) {
+            var7.printStackTrace();
+        }
+
+        return s;
     }
 
     /**
@@ -2237,6 +2558,7 @@ public class NewScanActivity extends Activity {
 
     }
 
+    Boolean saveReference = false;
     private void SaveReferenceDialog() {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
         alertDialogBuilder.setTitle("Finish");
@@ -2247,7 +2569,10 @@ public class NewScanActivity extends Activity {
             @Override
             public void onClick(DialogInterface arg0, int arg1) {
                 alertDialog.dismiss();
-                finish();
+                SettingsManager.storeStringPref(mContext, SettingsManager.SharedPreferencesKeys.ReferenceScan, "ReferenceScan");
+                SetConfig(ActiveEXTRA);
+                saveReference = true;
+                //finish();
             }
         });
 
@@ -2327,6 +2652,7 @@ public class NewScanActivity extends Activity {
             {
                scanConf = GetOneSectionScanConfiguration(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
             }
+            EXTRADATA_List.add(intent.getByteArrayExtra(NIRScanSDK.EXTRA_DATA));
             ScanConfigList.add(scanConf);
 
             if (storedConfSize>0 && receivedConfSize==0) {
@@ -2360,6 +2686,7 @@ public class NewScanActivity extends Activity {
                     if(index == ScanConfigIndextoByte )
                     {
                         activeConf = ScanConfigList.get(i);
+                        ActiveEXTRA = EXTRADATA_List.get(i);
                     }
                 }
 
@@ -2427,12 +2754,6 @@ public class NewScanActivity extends Activity {
         lampclose.putExtra(NIRScanSDK.LAMP_ON_OFF, value);
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(lampclose);
     }
-    private void controlManul(int value)
-    {
-        Intent scan_mode = new Intent(NIRScanSDK.ACTION_SCAN_MODE);
-        scan_mode.putExtra(NIRScanSDK.SCAN_MODE_ON_OFF, value);
-        LocalBroadcastManager.getInstance(mContext).sendBroadcast(scan_mode);
-    }
     private void controlPGA()
     {
         Intent setpga = new Intent(NIRScanSDK.ACTION_PGA);
@@ -2448,353 +2769,36 @@ public class NewScanActivity extends Activity {
     }
     private Boolean checkValidRepeat()
     {
-        int value = Integer.parseInt(et_repead.getText().toString());
-        if(value>=1&&value<=100)
+        try
         {
-            return true;
+            int value = Integer.parseInt(et_repead.getText().toString());
+            if(value>=1&&value<=50)
+            {
+                return true;
+            }
         }
+        catch (NumberFormatException ex)
+        {
+        }
+
         return false;
     }
     private Boolean checkValidPga()
     {
-        int value = Integer.parseInt(et_pga.getText().toString());
-        if(value==1 || value == 2 || value == 4 || value==8 || value==16 || value==32 ||value==64)
+        try
         {
-            return true;
+            int value = Integer.parseInt(et_pga.getText().toString());
+            if(value==1 || value == 2 || value == 4 || value==8 || value==16 || value==32 ||value==64)
+            {
+                return true;
+            }
+        }
+        catch (NumberFormatException ex)
+        {
         }
         return false;
     }
 
-    private void quickset(int index)
-    {
-        Intent quickset = new Intent(NIRScanSDK.ACTION_QUICK_SET);
-        switch (index)
-        {
-            case NIRScanConfigType://may have five value for slew type
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x81;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;//payload length
-                data[4] = (byte) scan_method_index;//0:column 1:hadamard
-                //data[4] = (byte) 0x01;//0:column 1:hadamard
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case  NIRScanConfigWidth:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x85;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) scan_width_index;//2:2.34,3:3.54...
-                //data[4] = (byte) 0x05;//2:2.34,3:3.54...
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigSet:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8A;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigStart_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF; //Command Start Flag
-                data[1] = (byte) 0x83; //Command
-                data[2] = (byte) 0x02; //Command Group
-                data[3] = (byte) 0x02; //Payload length
-                int start_nm_value = Integer.parseInt(et_spec_start.getText().toString());
-                data[4] = (byte)(start_nm_value); //Payload
-                data[5] = (byte)(start_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigEnd_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x84;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int end_nm_value = Integer.parseInt(et_spec_end.getText().toString());
-                data[4] = (byte)(end_nm_value);
-                data[5] = (byte)(end_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumPattern:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x86;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int num_pattern_value = Integer.parseInt(et_res.getText().toString());
-                data[4] = (byte) num_pattern_value;
-                data[5] = (byte)(num_pattern_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigNumRepeats:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x87;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                int num_repeat_value = Integer.parseInt(et_aver_scan.getText().toString());
-                data[4] = (byte) num_repeat_value;
-                data[5] = (byte)(num_repeat_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumSections:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8C;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigExposureTime:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8D;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) exposure_time_index;
-                data[5] = (byte)(exposure_time_index>>8);
-               // data[4] = (byte) 5;
-               // data[5] = (byte)(5>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigSave:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-
-                data[1] = (byte) 0x8B;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigName:
-            {
-                byte data[] = new byte[7];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x89;
-                data[2] = (byte) 0x02;
-                String isoString = "gty";
-                byte[] midbytes=isoString.getBytes();
-                data[3] = (byte) 0x03;
-                data[4] = midbytes[0];
-                data[5] = midbytes[1];
-                data[6] = midbytes[2];
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigIndex:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x82;
-                data[2] = (byte) 0x02;
-                int len = ScanConfigList.size();
-                int configindex = ScanConfigList.get(len-1).getScanConfigIndex()+1;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) configindex;
-                data[5] = (byte) (configindex>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigSerialNumber:
-            {
-                byte data[] = new byte[11];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x88;
-                data[2] = (byte) 0x02;
-                String SerialNumber = activeConf.getScanConfigSerialNumber();
-                byte[] SerialNumberbytes=SerialNumber.getBytes();
-                data[3] = SerialNumberbytes[0];
-                data[4] = SerialNumberbytes[1];
-                data[5] = SerialNumberbytes[2];
-                data[6] = SerialNumberbytes[3];
-                data[7] = SerialNumberbytes[4];
-                data[8] = SerialNumberbytes[5];
-                data[9] = SerialNumberbytes[6];
-                data[10] = SerialNumberbytes[7];
-            }
-        }
-
-    }
-
-    private void ReferenceConfig(int index)
-    {
-        Intent quickset = new Intent(NIRScanSDK.ACTION_QUICK_SET);
-        switch (index)
-        {
-            case NIRScanConfigType://may have five value for slew type
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x81;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;//payload length
-                data[4] = (byte) 0x00;//0:column 1:hadamard
-                //data[4] = (byte) 0x01;//0:column 1:hadamard
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case  NIRScanConfigWidth:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x85;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 6;//2:2.34,3:3.54...
-                //data[4] = (byte) 0x05;//2:2.34,3:3.54...
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigSet:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8A;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigStart_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF; //Command Start Flag
-                data[1] = (byte) 0x83; //Command
-                data[2] = (byte) 0x02; //Command Group
-                data[3] = (byte) 0x02; //Payload length
-                int start_nm_value = 900;
-                data[4] = (byte)(start_nm_value); //Payload
-                data[5] = (byte)(start_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigEnd_nm:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x84;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int end_nm_value = 1700;
-                data[4] = (byte)(end_nm_value);
-                data[5] = (byte)(end_nm_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumPattern:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x86;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;//payload length
-                int num_pattern_value = 228;
-                data[4] = (byte) num_pattern_value;
-                data[5] = (byte)(num_pattern_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-            case NIRScanConfigNumRepeats:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x87;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                int num_repeat_value = 6;
-                data[4] = (byte) num_repeat_value;
-                data[5] = (byte)(num_repeat_value>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigNumSections:
-            {
-                byte data[] = new byte[5];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8C;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x01;
-                data[4] = (byte) 0x01;
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-            case NIRScanConfigExposureTime:
-            {
-                byte data[] = new byte[6];
-                data[0] = (byte) 0xFF;
-                data[1] = (byte) 0x8D;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) 0;
-                data[5] = (byte)(0>>8);
-                // data[4] = (byte) 5;
-                // data[5] = (byte)(5>>8);
-                quickset.putExtra(NIRScanSDK.QUICK_SET_VALUE, data);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(quickset);
-                break;
-            }
-
-        }
-
-    }
     //Add get storedConfSize ---------------------------------------------
     private class  ScanConfSizeReceiver extends BroadcastReceiver {
 
@@ -2947,6 +2951,13 @@ public class NewScanActivity extends Activity {
         EnableLinearComponet(layout);
         layout = (LinearLayout) findViewById(R.id.ly_conf_manual);
         EnableLinearComponet(layout);
+        if(btn_scan_mode.isChecked() == false)
+        {
+            btn_lamp.setEnabled(false);
+            et_repead.setEnabled(false);
+            et_pga.setEnabled(false);
+            et_lamptime.setEnabled(true);
+        }
         //quick set ----------------------------------
         layout = (LinearLayout) findViewById(R.id.ll_prefix_quickset);
         EnableLinearComponet(layout);
@@ -3042,16 +3053,6 @@ public class NewScanActivity extends Activity {
                 btn_set_value.setClickable(false);
                 btn_scan.setClickable(false);
                 calProgress.setVisibility(view.VISIBLE);
-               /* quickset(NIRScanConfigNumRepeats);
-                quickset(NIRScanConfigNumSections);
-                quickset(NIRScanConfigType);
-                quickset(NIRScanConfigWidth);
-                quickset(NIRScanConfigStart_nm);
-                quickset(NIRScanConfigEnd_nm);
-                quickset(NIRScanConfigNumPattern);
-                quickset(NIRScanConfigExposureTime);
-                quickset(NIRScanConfigSet);
-                Dialog_Pane_Delay("Finish","Complete set config.");*/
                 SetScanConfiguration();
             }
 
@@ -3319,7 +3320,7 @@ public class NewScanActivity extends Activity {
 
     private void readActivateState()
     {
-
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mInfoReceiver);
         Intent ReadActivateState = new Intent(NIRScanSDK.ACTION_READ_ACTIVATE_STATE);
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(ReadActivateState);
     }
@@ -3342,7 +3343,7 @@ public class NewScanActivity extends Activity {
             else
             {
                  String licensekey = SettingsManager.getStringPref(mContext, SettingsManager.SharedPreferencesKeys.licensekey, null);
-                if(licensekey!=null)
+                if(licensekey!=null && licensekey!="")
                 {
                     calProgress.setVisibility(View.VISIBLE);
                     setActivateStateKey(licensekey);
@@ -3443,11 +3444,33 @@ public class NewScanActivity extends Activity {
             calProgress.setVisibility(View.GONE);
             if(flag)
             {
-                Dialog_Pane("Success","Complete to set configuration.");
+                if(saveReference == true)
+                {
+                    saveReference = false;
+                    finish();
+                }
+                else if(function == 4) //reference
+                {
+                    ReferenceConfigSaveSuccess();
+                }
+                else
+                {
+                    Dialog_Pane("Success","Complete to set configuration.");
+                }
             }
             else
             {
-                Dialog_Pane("Fail","Set configuration fail.");
+
+                if(saveReference == true)
+                {
+                    Dialog_Pane("Fail","Restore config fail, should re-open device.");
+                    saveReference = false;
+                    finish();
+                }
+                else
+                {
+                    Dialog_Pane("Fail","Set configuration fail.");
+                }
             }
         }
     }
@@ -3530,7 +3553,7 @@ public class NewScanActivity extends Activity {
         int[] sectionExposureTime = new int[5];
         byte[] EXTRA_DATA = new byte[155];
         //transfer config name to byte
-        String isoString ="aaa";
+        String isoString ="QuickSet";
         int name_size = isoString.length();
         byte[] ConfigNamebytes=isoString.getBytes();
         for(int i=0;i<name_size;i++)
@@ -3683,6 +3706,13 @@ public class NewScanActivity extends Activity {
         btn_manual.setBackgroundColor(0xFF0099CC);
         btn_quickset.setBackgroundColor(0xFF0099CC);
         btn_maintain.setBackgroundColor(0xFF0099CC);
+
+        findViewById(R.id.layout_normal).setVisibility(View.VISIBLE);
+        findViewById(R.id.layout_manual).setVisibility(View.GONE);
+        findViewById(R.id.layout_quickset).setVisibility(View.GONE);
+        findViewById(R.id.layout_maintain).setVisibility(View.GONE);
+        btn_normal.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
+        function = 1;
     }
     private void closeFunction()
     {
@@ -3692,5 +3722,119 @@ public class NewScanActivity extends Activity {
         btn_manual.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
         btn_quickset.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
         btn_maintain.setBackgroundColor(ContextCompat.getColor(mContext, R.color.gray));
+        findViewById(R.id.layout_normal).setVisibility(View.VISIBLE);
+        findViewById(R.id.layout_manual).setVisibility(View.GONE);
+        findViewById(R.id.layout_quickset).setVisibility(View.GONE);
+        findViewById(R.id.layout_maintain).setVisibility(View.GONE);
+        btn_normal.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
+        function = 1;
+    }
+
+
+    private EditText.OnEditorActionListener et_pga_listenser = new EditText.OnEditorActionListener()
+    {
+
+        @Override
+        public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    actionId == EditorInfo.IME_ACTION_DONE ||
+                    event.getAction() == KeyEvent.ACTION_DOWN &&
+                            event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                if( checkValidPga()==true)
+                {
+                    controlPGA();
+                    return false;
+                }
+            }
+            return false;
+        }
+    };
+
+    private EditText.OnEditorActionListener et_repead_listenser = new EditText.OnEditorActionListener()
+    {
+
+        @Override
+        public boolean onEditorAction(TextView textView, int actionId, KeyEvent event) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    actionId == EditorInfo.IME_ACTION_DONE ||
+                    event.getAction() == KeyEvent.ACTION_DOWN &&
+                            event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                if(checkValidRepeat())
+                {
+                    controlRepeat();
+                    return false;
+                }
+
+            }
+            return false;
+        }
+    };
+
+    public void SetReferenceParameter()
+    {
+        int scanType=0;
+        int scanConfigIndex=0;
+        int numRepeat=0;
+        byte[] scanConfigSerialNumber = new byte[8];
+        byte[] configName = new byte[40];
+        byte numSections=0;
+        byte[] sectionScanType=new byte[5];
+        byte[] sectionWidthPx=new byte[5];
+        int[] sectionWavelengthStartNm = new int[5];
+        int[] sectionWavelengthEndNm = new int[5];
+        int[] sectionNumPatterns = new int[5];
+        int[] sectionExposureTime = new int[5];
+        byte[] EXTRA_DATA = new byte[155];
+        //transfer config name to byte
+        String isoString ="Reference";
+        int name_size = isoString.length();
+        byte[] ConfigNamebytes=isoString.getBytes();
+        for(int i=0;i<name_size;i++)
+        {
+            configName[i] = ConfigNamebytes[i];
+        }
+        scanType = 2;
+        //transfer SerialNumber to byte
+        String SerialNumber = "12345678";
+        byte[] SerialNumberbytes=SerialNumber.getBytes();
+        int SerialNumber_size = SerialNumber.length();
+        for(int i=0;i<SerialNumber_size;i++)
+        {
+            scanConfigSerialNumber[i] = SerialNumberbytes[i];
+        }
+        scanConfigIndex = 255;
+        numSections =(byte) 1;
+        numRepeat = 6;
+
+        for(int i=0;i<numSections;i++)
+        {
+            sectionScanType[i] = (byte)0;
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWavelengthStartNm[i] =900;
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWavelengthEndNm[i] =1700;
+        }
+        et_res.setText("228");
+        for(int i=0;i<numSections;i++)
+        {
+            sectionNumPatterns[i] =Integer.parseInt(et_res.getText().toString());
+        }
+        spin_scan_width.setSelection(4);
+        for(int i=0;i<numSections;i++)
+        {
+            sectionWidthPx[i] = (byte)(spin_scan_width.getSelectedItemPosition()+2);
+        }
+        for(int i=0;i<numSections;i++)
+        {
+            sectionExposureTime[i] =0;
+        }
+        dlpSpecScanWriteConfiguration(scanType,scanConfigIndex,numRepeat,scanConfigSerialNumber,configName,numSections,
+                sectionScanType, sectionWidthPx, sectionWavelengthStartNm, sectionWavelengthEndNm, sectionNumPatterns,
+                sectionExposureTime,EXTRA_DATA);
+        SetConfig(EXTRA_DATA);
     }
 }

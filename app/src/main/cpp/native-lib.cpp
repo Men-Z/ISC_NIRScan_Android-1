@@ -3,6 +3,8 @@
 #include <string.h>
 #include "testjni.h"
 #include "dlpspec_scan.h"
+#include "dlpspec.h"
+#include "dlpspec_types.h"
 
 
 /*JNIEXPORT jint
@@ -428,4 +430,258 @@ Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanWriteConfiguration(
     int ret = 1;
     return ret;
 }
+
+extern "C"
+JNIEXPORT jint
+
+JNICALL
+Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanInterpConfigInfo(
+        JNIEnv *env,
+        jobject ,jbyteArray scanData,jintArray scanType ,jbyteArray scanConfigSerialNumber,jbyteArray configName,jbyteArray numSections,
+        jbyteArray sectionScanType, jbyteArray sectionWidthPx, jintArray sectionWavelengthStartNm, jintArray sectionWavelengthEndNm, jintArray sectionNumPatterns,
+        jintArray sectionNumRepeats, jintArray sectionExposureTime,jintArray pga,jintArray systemp,jintArray syshumidity,
+        jintArray lampintensity,jdoubleArray shift_vector_coff,jdoubleArray pixel_coff,jintArray day/* this */) {
+    scanResults finalScanResults;
+    //transfer jbytearray to char array--------------------------------------------------------------------------------------------------------
+    int scanData_len = env->GetArrayLength (scanData);
+    char* scanDataCharArray = new  char[scanData_len];
+    env->GetByteArrayRegion (scanData, 0, scanData_len, reinterpret_cast<jbyte*>(scanDataCharArray));
+    dlpspec_scan_interpret(scanDataCharArray,scanData_len,&finalScanResults);//interpret scanData some info and uncalibratedIntensity value
+    //scanType--------------------------------------------------------------------------------------
+    int scanType_len = env->GetArrayLength (scanType);
+    int* scanTypeIntArray = new  int[scanType_len];
+    env->GetIntArrayRegion (scanType, 0, scanType_len,scanTypeIntArray);
+    scanTypeIntArray[0] =finalScanResults.cfg.head.scan_type;
+    env->ReleaseIntArrayElements(scanType,scanTypeIntArray,0);
+    //scanConfigSerialNumber--------------------------------------------------------------------------------------
+    int scanConfigSerialNumber_len = env->GetArrayLength (scanConfigSerialNumber);
+    char* scanConfigSerialNumberCharArray = new  char[scanConfigSerialNumber_len];
+    env->GetByteArrayRegion (scanConfigSerialNumber, 0, scanConfigSerialNumber_len, reinterpret_cast<jbyte*>(scanConfigSerialNumberCharArray));
+    for(int i=0;i<8;i++)
+    {
+        scanConfigSerialNumberCharArray[i] = finalScanResults.serial_number[i];
+    }
+    env->ReleaseByteArrayElements(scanConfigSerialNumber,reinterpret_cast<jbyte*>(scanConfigSerialNumberCharArray),0);
+    //configName--------------------------------------------------------------------------------------
+    int configName_len = env->GetArrayLength (configName);
+    char* configNameCharArray = new  char[configName_len];
+    env->GetByteArrayRegion (configName, 0, configName_len, reinterpret_cast<jbyte*>(configNameCharArray));
+    for(int i=0;i<40;i++)
+    {
+        configNameCharArray[i] = finalScanResults.cfg.head.config_name[i];
+    }
+    env->ReleaseByteArrayElements(configName,reinterpret_cast<jbyte*>(configNameCharArray),0);
+    //numSections--------------------------------------------------------------------------------------
+    int numSections_len = env->GetArrayLength (numSections);
+    char* numSectionsCharArray = new  char[numSections_len];
+    env->GetByteArrayRegion (numSections, 0, numSections_len, reinterpret_cast<jbyte*>(numSectionsCharArray));
+    numSectionsCharArray[0] = finalScanResults.cfg.head.num_sections;
+    env->ReleaseByteArrayElements(numSections,reinterpret_cast<jbyte*>(numSectionsCharArray),0);
+    //sectionScanType--------------------------------------------------------------------------------------------------------------
+    int sectionScanType_len = env->GetArrayLength (sectionScanType);
+    char* sectionScanTypeCharArray = new  char[sectionScanType_len];
+    env->GetByteArrayRegion (sectionScanType, 0, sectionScanType_len, reinterpret_cast<jbyte*>(sectionScanTypeCharArray));
+    int section = finalScanResults.cfg.head.num_sections;
+    for(int i=0;i<section;i++)
+    {
+        sectionScanTypeCharArray[i] = finalScanResults.cfg.section[i].section_scan_type;
+    }
+    env->ReleaseByteArrayElements(sectionScanType,reinterpret_cast<jbyte*>(sectionScanTypeCharArray),0);
+    //sectionWidthPx--------------------------------------------------------------------------------------------------------------
+    int sectionWidthPx_len = env->GetArrayLength (sectionWidthPx);
+    char* sectionWidthPxCharArray = new  char[sectionWidthPx_len];
+    env->GetByteArrayRegion (sectionWidthPx, 0, sectionWidthPx_len, reinterpret_cast<jbyte*>(sectionWidthPxCharArray));
+    for(int i=0;i<section;i++)
+    {
+        sectionWidthPxCharArray[i] =  finalScanResults.cfg.section[i].width_px;
+    }
+    env->ReleaseByteArrayElements(sectionWidthPx,reinterpret_cast<jbyte*>(sectionWidthPxCharArray),0);
+    //sectionWavelengthStartNm--------------------------------------------------------------------------------------------------------------
+    int sectionWavelengthStartNm_len = env->GetArrayLength (sectionWavelengthStartNm);
+    int * sectionWavelengthStartNmIntArray = new  int[sectionWidthPx_len];
+    env->GetIntArrayRegion (sectionWavelengthStartNm, 0, sectionWavelengthStartNm_len, sectionWavelengthStartNmIntArray);
+    for(int i=0;i<section;i++)
+    {
+        sectionWavelengthStartNmIntArray[i] =  finalScanResults.cfg.section[i].wavelength_start_nm;
+    }
+    env->ReleaseIntArrayElements(sectionWavelengthStartNm,sectionWavelengthStartNmIntArray,0);
+    //sectionWavelengthEndNm--------------------------------------------------------------------------------------------------------------
+    int sectionWavelengthEndNm_len = env->GetArrayLength (sectionWavelengthEndNm);
+    int * sectionWavelengthEndNmIntArray = new  int[sectionWavelengthEndNm_len];
+    env->GetIntArrayRegion (sectionWavelengthEndNm, 0, sectionWavelengthEndNm_len, sectionWavelengthEndNmIntArray);
+    for(int i=0;i<section;i++)
+    {
+        sectionWavelengthEndNmIntArray[i] =  finalScanResults.cfg.section[i].wavelength_end_nm;
+    }
+    env->ReleaseIntArrayElements(sectionWavelengthEndNm,sectionWavelengthEndNmIntArray,0);
+    //sectionNumPatterns--------------------------------------------------------------------------------------------------------------
+    int sectionNumPatterns_len = env->GetArrayLength (sectionNumPatterns);
+    int * sectionNumPatternsIntArray = new  int[sectionNumPatterns_len];
+    env->GetIntArrayRegion (sectionNumPatterns, 0, sectionNumPatterns_len, sectionNumPatternsIntArray);
+    for(int i=0;i<section;i++)
+    {
+        sectionNumPatternsIntArray[i] =  finalScanResults.cfg.section[i].num_patterns;
+    }
+    env->ReleaseIntArrayElements(sectionNumPatterns,sectionNumPatternsIntArray,0);
+    //sectionNumRepeats--------------------------------------------------------------------------------------------------------------
+    int sectionNumRepeats_len = env->GetArrayLength (sectionNumRepeats);
+    int * sectionNumRepeatsIntArray = new  int[sectionNumRepeats_len];
+    env->GetIntArrayRegion (sectionNumRepeats, 0, sectionNumRepeats_len, sectionNumRepeatsIntArray);
+    for(int i=0;i<section;i++)
+    {
+        sectionNumRepeatsIntArray[i] = finalScanResults.cfg.head.num_repeats;
+    }
+    env->ReleaseIntArrayElements(sectionNumRepeats,sectionNumRepeatsIntArray,0);
+    //sectionExposureTime--------------------------------------------------------------------------------------------------------------
+    int sectionExposureTime_len = env->GetArrayLength (sectionExposureTime);
+    int * sectionExposureTimeIntArray = new  int[sectionExposureTime_len];
+    env->GetIntArrayRegion (sectionExposureTime, 0, sectionExposureTime_len, sectionExposureTimeIntArray);
+    for(int i=0;i<section;i++)
+    {
+        sectionExposureTimeIntArray[i] =   finalScanResults.cfg.section[i].exposure_time;
+    }
+    env->ReleaseIntArrayElements(sectionExposureTime,sectionExposureTimeIntArray,0);
+    //pga---------------------------------------------------------------------------------------------
+    int pga_len = env->GetArrayLength (pga);
+    int* pgaIntArray = new  int[pga_len];
+    env->GetIntArrayRegion (pga, 0, pga_len,pgaIntArray);
+    pgaIntArray[0] =finalScanResults.pga;
+    env->ReleaseIntArrayElements(pga,pgaIntArray,0);
+    //systemp--------------------------------------------------------------------------------------
+    int systemp_len = env->GetArrayLength (systemp);
+    int* systempIntArray = new  int[systemp_len];
+    env->GetIntArrayRegion (systemp, 0, systemp_len,systempIntArray);
+    systempIntArray[0] =finalScanResults.system_temp_hundredths;
+    env->ReleaseIntArrayElements(systemp,systempIntArray,0);
+    //sys humidity--------------------------------------------------------------------------------------
+    int syshumidity_len = env->GetArrayLength (syshumidity);
+    int*syshumidityIntArray = new  int[syshumidity_len];
+    env->GetIntArrayRegion (syshumidity, 0, syshumidity_len,syshumidityIntArray);
+    syshumidityIntArray[0] =finalScanResults.humidity_hundredths;
+    env->ReleaseIntArrayElements(syshumidity,syshumidityIntArray,0);
+    //Lamp Intensity--------------------------------------------------------------------------------------
+    int lampintensity_len = env->GetArrayLength (lampintensity);
+    int*lampintensityIntArray = new  int[lampintensity_len];
+    env->GetIntArrayRegion (lampintensity, 0, lampintensity_len,lampintensityIntArray);
+    lampintensityIntArray[0] =finalScanResults.lamp_pd;
+    env->ReleaseIntArrayElements(lampintensity,lampintensityIntArray,0);
+    //shift vector coff--------------------------------------------------------------------------------------
+    int shift_vector_coff_len = env->GetArrayLength (shift_vector_coff);
+    double  *shift_vector_coffDoubleArray = new  double[shift_vector_coff_len];
+    env->GetDoubleArrayRegion (shift_vector_coff, 0, shift_vector_coff_len,shift_vector_coffDoubleArray);
+    shift_vector_coffDoubleArray[0] =finalScanResults.calibration_coeffs.ShiftVectorCoeffs[0];
+    shift_vector_coffDoubleArray[1] =finalScanResults.calibration_coeffs.ShiftVectorCoeffs[1];
+    shift_vector_coffDoubleArray[2] =finalScanResults.calibration_coeffs.ShiftVectorCoeffs[2];
+    env->ReleaseDoubleArrayElements(shift_vector_coff,shift_vector_coffDoubleArray,0);
+    //pixel_coff--------------------------------------------------------------------------------------
+    int pixel_coff_len = env->GetArrayLength (pixel_coff);
+    double  *pixel_coffDoubleArray = new  double[pixel_coff_len];
+    env->GetDoubleArrayRegion (pixel_coff, 0, pixel_coff_len,pixel_coffDoubleArray);
+    pixel_coffDoubleArray[0] =finalScanResults.calibration_coeffs.PixelToWavelengthCoeffs[0];
+    pixel_coffDoubleArray[1] =finalScanResults.calibration_coeffs.PixelToWavelengthCoeffs[1];
+    pixel_coffDoubleArray[2] =finalScanResults.calibration_coeffs.PixelToWavelengthCoeffs[2];
+    env->ReleaseDoubleArrayElements(pixel_coff,pixel_coffDoubleArray,0);
+
+    //day--------------------------------------------------------------------------------------
+    int day_len = env->GetArrayLength (day);
+    int*dayIntArray = new  int[day_len];
+    env->GetIntArrayRegion (day, 0,day_len,dayIntArray);
+    dayIntArray[0] = finalScanResults.year;
+    dayIntArray[1] =  finalScanResults.month;
+    dayIntArray[2] = finalScanResults.day;
+    dayIntArray[3] = finalScanResults.hour;
+    dayIntArray[4] = finalScanResults.minute;
+    dayIntArray[5] = finalScanResults.second;
+    env->ReleaseIntArrayElements(day,dayIntArray,0);
+
+    int length = 0;
+    return length;
+}
+
+extern "C"
+JNIEXPORT jint
+
+JNICALL
+Java_com_isctechnologies_NanoScan_NewScanActivity_dlpSpecScanInterpReferenceInfo(
+        JNIEnv *env,
+        jobject ,jbyteArray scanData, jbyteArray CalCoefficients,jbyteArray RefCalMatrix,jintArray systemp,jintArray syshumidity,
+        jintArray lampintensity,jintArray numpattren,jintArray width,jintArray numrepeat,jintArray day/* this */) {
+    const char tpl_header[] = "tpl\0"; // I need to replace the first three bytes to magic number "tpl" to avoid interpReference error of format signature mismatch
+    scanResults finalScanResults,referenceResults;
+    //transfer jbytearray to char array--------------------------------------------------------------------------------------------------------
+    int scanData_len = env->GetArrayLength (scanData);
+    char* scanDataCharArray = new  char[scanData_len];
+    env->GetByteArrayRegion (scanData, 0, scanData_len, reinterpret_cast<jbyte*>(scanDataCharArray));
+    //memcpy(scanDataCharArray, tpl_header, sizeof(tpl_header));
+
+    int CalCoefficients_len = env->GetArrayLength (CalCoefficients);
+    char* CalCoefficientsCharArray = new  char[CalCoefficients_len];
+    env->GetByteArrayRegion (CalCoefficients, 0, CalCoefficients_len, reinterpret_cast<jbyte*>(CalCoefficientsCharArray));
+    memcpy(CalCoefficientsCharArray, tpl_header, sizeof(tpl_header));
+
+    int RefCalMatrix_len = env->GetArrayLength (RefCalMatrix);
+    char* RefCalMatrixCharArray = new  char[RefCalMatrix_len];
+    env->GetByteArrayRegion (RefCalMatrix, 0, RefCalMatrix_len, reinterpret_cast<jbyte*>(RefCalMatrixCharArray));
+    memcpy(RefCalMatrixCharArray, tpl_header, sizeof(tpl_header));
+
+
+    dlpspec_scan_interpret(scanDataCharArray,scanData_len,&finalScanResults);//interpret scanData some info and uncalibratedIntensity value
+    dlpspec_scan_interpReference(CalCoefficientsCharArray,CalCoefficients_len,RefCalMatrixCharArray,RefCalMatrix_len,&finalScanResults,&referenceResults);
+
+    //systemp--------------------------------------------------------------------------------------
+    int systemp_len = env->GetArrayLength (systemp);
+    int* systempIntArray = new  int[systemp_len];
+    env->GetIntArrayRegion (systemp, 0, systemp_len,systempIntArray);
+    systempIntArray[0] =referenceResults.system_temp_hundredths;
+    env->ReleaseIntArrayElements(systemp,systempIntArray,0);
+    //sys humidity--------------------------------------------------------------------------------------
+    int syshumidity_len = env->GetArrayLength (syshumidity);
+    int*syshumidityIntArray = new  int[syshumidity_len];
+    env->GetIntArrayRegion (syshumidity, 0, syshumidity_len,syshumidityIntArray);
+    syshumidityIntArray[0] =referenceResults.humidity_hundredths;
+    env->ReleaseIntArrayElements(syshumidity,syshumidityIntArray,0);
+    //Lamp Intensity--------------------------------------------------------------------------------------
+    int lampintensity_len = env->GetArrayLength (lampintensity);
+    int*lampintensityIntArray = new  int[lampintensity_len];
+    env->GetIntArrayRegion (lampintensity, 0, lampintensity_len,lampintensityIntArray);
+    lampintensityIntArray[0] =referenceResults.lamp_pd;
+    env->ReleaseIntArrayElements(lampintensity,lampintensityIntArray,0);
+
+    //Num pattern--------------------------------------------------------------------------------------
+    int numpattren_len = env->GetArrayLength (numpattren);
+    int*numpattrenIntArray = new  int[numpattren_len];
+    env->GetIntArrayRegion (numpattren, 0, numpattren_len,numpattrenIntArray);
+    numpattrenIntArray[0] =referenceResults.cfg.section[0].num_patterns;
+    env->ReleaseIntArrayElements(numpattren,numpattrenIntArray,0);
+
+    //width--------------------------------------------------------------------------------------
+    int width_len = env->GetArrayLength (width);
+    int*widthIntArray = new  int[width_len];
+    env->GetIntArrayRegion (width, 0, width_len,widthIntArray);
+    widthIntArray[0] =referenceResults.cfg.section[0].width_px;
+    env->ReleaseIntArrayElements(width,widthIntArray,0);
+
+    //num repeat--------------------------------------------------------------------------------------
+    int numrepeat_len = env->GetArrayLength (numrepeat);
+    int*numrepeatIntArray = new  int[numrepeat_len];
+    env->GetIntArrayRegion (numrepeat, 0, numrepeat_len,numrepeatIntArray);
+    numrepeatIntArray[0] = referenceResults.cfg.head.num_repeats;
+    env->ReleaseIntArrayElements(numrepeat,numrepeatIntArray,0);
+
+    //day--------------------------------------------------------------------------------------
+    int day_len = env->GetArrayLength (day);
+    int*dayIntArray = new  int[day_len];
+    env->GetIntArrayRegion (day, 0,day_len,dayIntArray);
+    dayIntArray[0] = referenceResults.year;
+    dayIntArray[1] =  referenceResults.month;
+    dayIntArray[2] = referenceResults.day;
+    dayIntArray[3] = referenceResults.hour;
+    dayIntArray[4] = referenceResults.minute;
+    dayIntArray[5] = referenceResults.second;
+    env->ReleaseIntArrayElements(day,dayIntArray,0);
+
+    int length = 0;
+    return length;
+}
+
 

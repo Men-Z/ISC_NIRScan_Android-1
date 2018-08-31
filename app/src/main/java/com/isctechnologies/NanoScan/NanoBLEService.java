@@ -91,6 +91,7 @@ public class NanoBLEService extends Service {
     private boolean activeConfRequested = false;
 
     private static final boolean debug = true;
+    Boolean getbattery = false;
 
     public NanoBLEService() {
     }
@@ -127,18 +128,17 @@ public class NanoBLEService extends Service {
     private static BroadcastReceiver mSetActiveScanConfReceiver;
     private static BroadcastReceiver mUpdateThresholdReceiver;
     private static BroadcastReceiver mRequestActiveConfReceiver;
-    private static BroadcastReceiver mScanModeReceiver;
     private static BroadcastReceiver mLampReceiver;
     private static BroadcastReceiver mPGAReceiver;
     private static BroadcastReceiver mRepeatReceiver;
-    private static BroadcastReceiver mInterScanReceiver;
     private static BroadcastReceiver mLamptimeReceiver;
-    private static BroadcastReceiver mQuickSetReceiver;
     private static BroadcastReceiver mSaveReferencetReceiver;
     private static BroadcastReceiver mActivateStateReceiver;
     private static BroadcastReceiver mReadCurrentConfigReceiver;
     private static BroadcastReceiver mWriteScanConfigReceiver;
     private static BroadcastReceiver mReadActivateStateReceiver;
+    private static BroadcastReceiver mUUIDRequestReceiver;
+    private static BroadcastReceiver mBatteryRequestReceiver;
 
     public static final String ACTION_SCAN_STARTED = "com.isctechnologies.NanoScan.bluetooth.service.ACTION_SCAN_STARTED";
 
@@ -381,7 +381,17 @@ public class NanoBLEService extends Service {
                     if (debug)
                         Log.d(TAG, "batt level:" + stringBuilder.toString());
                     battLevel = data[0];
-                    NIRScanSDK.getTemp();
+                    if(getbattery)
+                    {
+                        Intent sendActiveConfIntent = new Intent(NIRScanSDK.SEND_BATTERY);
+                        sendActiveConfIntent.putExtra(NIRScanSDK.EXTRA_BATTERY, battLevel);
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(sendActiveConfIntent);
+                    }
+                    else
+                    {
+                        NIRScanSDK.getTemp();
+                    }
+
                 } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GGIS_TEMP_MEASUREMENT)) {
                     byte[] data = characteristic.getValue();
                     final StringBuilder stringBuilder = new StringBuilder(data.length);
@@ -471,6 +481,11 @@ public class NanoBLEService extends Service {
                     Intent ReadActivateStateIntent = new Intent(NIRScanSDK.ACTION_RETURN_READ_ACTIVATE_STATE);
                     ReadActivateStateIntent.putExtra(NIRScanSDK.RETURN_READ_ACTIVATE_STATE, data);
                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(ReadActivateStateIntent);
+                } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.DEVICE_UUID)) {
+                    byte[] data = characteristic.getValue();
+                    Intent sendActiveConfIntent = new Intent(NIRScanSDK.SEND_DEVICE_UUID);
+                    sendActiveConfIntent.putExtra(NIRScanSDK.EXTRA_DEVICE_UUID, data);
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(sendActiveConfIntent);
                 } else {
                     if (debug)
                         Log.d(TAG, "Read from unknown characteristic:" + characteristic.getUuid().toString());
@@ -1293,12 +1308,36 @@ public class NanoBLEService extends Service {
             }
         };
 
+        mUUIDRequestReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null) {
+                    if (debug)
+                        Log.d(TAG, "Requesting UUID Info");
+                    NIRScanSDK.getUUID();
+                }
+            }
+        };
+
+        mBatteryRequestReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null) {
+                    if (debug)
+                        Log.d(TAG, "Requesting Device Info");
+                    getbattery = true;
+                    NIRScanSDK.getBatteryLevel();
+                }
+            }
+        };
+
         mStatusRequestReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent != null) {
                     if (debug)
                         Log.d(TAG, "Requesting Device Status");
+                    getbattery = false;
                     NIRScanSDK.getBatteryLevel();
                 }
             }
@@ -1400,57 +1439,27 @@ public class NanoBLEService extends Service {
             }
         };
 
-        mScanModeReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (debug)
-                    Log.d(TAG, "Setting Scan Mode");
-                byte[] data = new byte[5];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x70;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x01;
-                int value = intent.getIntExtra(NIRScanSDK.SCAN_MODE_ON_OFF,0);
-                if(value == 1)
-                {
-                    data[4] =(byte) 0x01;
-                }
-                else
-                {
-                    data[4] =(byte) 0x00;
-                }
-                NIRScanSDK.setManual(data);
-            }
-        };
-
         mLampReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting Lamp");
-                byte[] data = new byte[6];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x71;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x02;
+                byte[] data = new byte[1];
 
                 int value = intent.getIntExtra(NIRScanSDK.LAMP_ON_OFF,0);
-                if(value == 1)
+                if(value == 1) //on---1
                 {
-                    data[4] =(byte) 0x01;
-                    data[5] =(byte) 0x01;
+                    data[0] =(byte) 0x01;
                 }
-                else if(value == 2)//close lamp
+                else if(value == 0)//Auto----0
                 {
-                    data[4] =(byte) 0x00;
-                    data[5] =(byte) 0x00;
+                    data[0] =(byte) 0x00;
                 }
-                else
+                else//off ---2
                 {
-                    data[4] =(byte) 0x01;
-                    data[5] =(byte) 0x00;
+                    data[0] =(byte) 0x02;
                 }
-                NIRScanSDK.Quickset(data,100);
+                NIRScanSDK.setLampMode(data);
             }
         };
 
@@ -1459,15 +1468,11 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting pga");
-                byte[] data = new byte[5];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x72;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x01;
 
                 int value = intent.getIntExtra(NIRScanSDK.PGA_SET,0);
-                data[4]= (byte)( (value & 0x000000ff) );
-                NIRScanSDK.setManual(data);
+                byte[] data = new byte[1];
+                data[0]= (byte)( (value & 0x000000ff) );
+                NIRScanSDK.setPGA(data);
             }
         };
 
@@ -1476,32 +1481,11 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting repeat");
-                byte[] data = new byte[6];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x73;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x02;
+                byte[] data = new byte[1];
 
                 int value = intent.getIntExtra(NIRScanSDK.REPEAT_SET,0);
-               // data[4]= (byte)( (value & 0x000000ff) );
-                data[4] = (byte)value;
-                data[5] = (byte)(value>>8);
-                NIRScanSDK.setManual(data);
-            }
-        };
-
-        mInterScanReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (debug)
-                    Log.d(TAG, "StartScan");
-                byte[] data = new byte[5];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x7A;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x01;
-                data[4] =(byte) 0x00;//not save SD
-                NIRScanSDK.setManual(data);
+                data[0]= (byte)( (value & 0x000000ff) );
+                NIRScanSDK.setScanAverage(data);
             }
         };
 
@@ -1510,28 +1494,13 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Setting Lamp time");
-                byte[] data = new byte[8];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x74;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x04;
+                byte[] data = new byte[4];
                 int value = intent.getIntExtra(NIRScanSDK.LAMP_TIME,0);
-                data[4] = (byte)value;
-                data[5] = (byte)(value>>8);
-                data[6] = (byte)(value>>16);
-                data[7] = (byte)(value>>24);
-                NIRScanSDK.setManual(data);
-            }
-        };
-
-        mQuickSetReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (debug)
-                    Log.d(TAG, "Setting QUICK SET");
-              //  int type = intent.getIntExtra(NIRScanSDK.QUICK_SET_TYPE,0);
-                   byte[] data = intent.getByteArrayExtra(NIRScanSDK.QUICK_SET_VALUE);
-                   NIRScanSDK.Quickset(data,100);
+                data[0] = (byte)value;
+                data[1] = (byte)(value>>8);
+                data[2] = (byte)(value>>16);
+                data[3] = (byte)(value>>24);
+                NIRScanSDK.setLampTime(data);
             }
         };
 
@@ -1540,13 +1509,9 @@ public class NanoBLEService extends Service {
             public void onReceive(Context context, Intent intent) {
                 if (debug)
                     Log.d(TAG, "Save Reference");
-                byte[] data = new byte[5];
-                data[0] =(byte) 0xFF;
-                data[1] =(byte) 0x7B;
-                data[2] =(byte) 0x02;
-                data[3] =(byte) 0x01;
-                data[4] =(byte) 0x01;
-                NIRScanSDK.Quickset(data,0);// delay
+                byte[] data = new byte[1];
+                data[0] =(byte) 0x5A;
+                NIRScanSDK.SaveReference(data);// delay
             }
         };
 
@@ -1602,18 +1567,17 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mSetActiveScanConfReceiver, new IntentFilter(NIRScanSDK.SET_ACTIVE_CONF));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mUpdateThresholdReceiver, new IntentFilter(NIRScanSDK.UPDATE_THRESHOLD));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mRequestActiveConfReceiver, new IntentFilter(NIRScanSDK.REQUEST_ACTIVE_CONF));
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mScanModeReceiver, new IntentFilter(NIRScanSDK.ACTION_SCAN_MODE));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mLampReceiver, new IntentFilter(NIRScanSDK.ACTION_LAMP));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mPGAReceiver, new IntentFilter(NIRScanSDK.ACTION_PGA));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mRepeatReceiver, new IntentFilter(NIRScanSDK.ACTION_REPEAT));
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mInterScanReceiver, new IntentFilter(NIRScanSDK.ACTION_INTER_SCAN));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mLamptimeReceiver, new IntentFilter(NIRScanSDK.ACTION_LAMP_TIME));
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mQuickSetReceiver, new IntentFilter(NIRScanSDK.ACTION_QUICK_SET));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mSaveReferencetReceiver, new IntentFilter(NIRScanSDK.ACTION_SAVE_REFERENCE));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_ACTIVATE_STATE));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadCurrentConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_CONFIG));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mWriteScanConfigReceiver, new IntentFilter(NIRScanSDK.ACTION_WRITE_SCAN_CONFIG));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_ACTIVATE_STATE));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mUUIDRequestReceiver, new IntentFilter(NIRScanSDK.GET_UUID));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mBatteryRequestReceiver, new IntentFilter(NIRScanSDK.GET_BATTERY));
 
     }
 
@@ -1636,18 +1600,16 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mSetActiveScanConfReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mUpdateThresholdReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mRequestActiveConfReceiver);
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mScanModeReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mLampReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mPGAReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mRepeatReceiver);
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mInterScanReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mLamptimeReceiver);
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mQuickSetReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mSaveReferencetReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mActivateStateReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadCurrentConfigReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mWriteScanConfigReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadActivateStateReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mBatteryRequestReceiver);
     }
 
     @Override
