@@ -184,7 +184,7 @@ public class NewScanActivity extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private Handler mHandler;
-    private static final String DEVICE_NAME = "NIR";
+    private static final String DEVICE_NAME = "NIR-";
     private boolean connected;
     private AlertDialog alertDialog;
     private TextView tv_scan_conf;

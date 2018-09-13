@@ -39,7 +39,7 @@ public class ScanActivity extends Activity {
     private Handler mHandler;
     private BluetoothAdapter mBluetoothAdapter;
     public BluetoothLeScanner mBluetoothLeScanner;
-    private static final String DEVICE_NAME = "NIR";
+    private static final String DEVICE_NAME = "NIR-";
     private ArrayList<NIRScanSDK.NanoDevice> nanoDeviceList = new ArrayList<>();
     private NanoScanAdapter nanoScanAdapter;
     private static Context mContext;
