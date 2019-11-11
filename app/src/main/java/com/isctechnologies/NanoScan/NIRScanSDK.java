@@ -76,7 +76,9 @@ public class NIRScanSDK {
     public static final String EXTRA_TEMP = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_TEMP";
     public static final String EXTRA_HUMID = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_HUMID";
     public static final String EXTRA_DEV_STATUS = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_DEV_STATUS";
+    public static final String EXTRA_DEV_STATUS_BYTE = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_DEV_STATUS_BYTE";
     public static final String EXTRA_ERR_STATUS = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_ERR_STATUS";
+    public static final String EXTRA_ERR_BYTE = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_ERR_BYTE";
     public static final String EXTRA_TEMP_THRESH = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_TEMP_THRESH";
     public static final String EXTRA_HUMID_THRESH = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_HUMID_THRESH";
     public static final String ACTION_REQ_CAL_COEFF = "com.isctechnologies.NanoScan.bluetooth.le.ACTION_REQ_CAL_COEFF";
@@ -94,7 +96,6 @@ public class NIRScanSDK {
     public static final String ACTION_REPEAT = "action.repeat";
     public static final String LAMP_TIME = "lamp.time";
     public static final String ACTION_LAMP_TIME = "action.lamp.time";
-    public static final String QUICK_SET_VALUE = "action.quick.set.value";
     public static final String ACTION_SAVE_REFERENCE = "action.save.reference";
     public static final String EXTRA_SPEC_COEF_DATA = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_SPEC_COEF_DATA";
     public static final String SPEC_CONF_DATA = "com.isctechnologies.NanoScan.bluetooth.le.SPEC_CONF_DATA";
@@ -119,6 +120,7 @@ public class NIRScanSDK {
     public static final String GET_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.GET_BATTERY";
     public static final String SEND_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.SEND_BATTERY";
     public static final String EXTRA_BATTERY = "com.isctechnologies.NanoScan.bluetooth.le.EXTRA_BATTERY";
+    public static final String CLEAR_ERROR_STATUS = "action.clear.error.status";
 
     public NIRScanSDK() {
     }
@@ -683,6 +685,12 @@ public class NIRScanSDK {
                 ReadActiveState();
             }
         }
+    }
+    public static void ClearErrorStatus()
+    {
+        byte[] writeData = new byte[]{0};
+        writeCharacteristic(NanoGattCharacteristic.mBleGattCharGGISErrorStatus, writeData);
+        System.out.println("__BT_SERVICE: Clear Error Status");
     }
     public static void ReadCurrentConfig(byte[] index) {
 

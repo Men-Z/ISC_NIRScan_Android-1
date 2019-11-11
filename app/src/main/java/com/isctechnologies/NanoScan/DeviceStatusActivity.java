@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,10 +33,16 @@ public class DeviceStatusActivity extends Activity {
     private TextView tv_humid;
     private EditText et_tempThresh;
     private EditText et_humidThresh;
+    private Button btn_device_status;
+    private Button btn_error_status;
 
     private BroadcastReceiver mStatusReceiver;
     private final BroadcastReceiver disconnReceiver = new DisconnReceiver();
     private final IntentFilter disconnFilter = new IntentFilter(NIRScanSDK.ACTION_GATT_DISCONNECTED);
+    String devStatus = "";
+    byte[] devbyte;
+    byte[] errbyte;
+    String errorStatus = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +64,12 @@ public class DeviceStatusActivity extends Activity {
         tv_humid = (TextView)findViewById(R.id.tv_humid);
         et_tempThresh = (EditText)findViewById(R.id.et_tempThresh);
         et_humidThresh = (EditText)findViewById(R.id.et_humidThresh);
+        btn_device_status = (Button)findViewById(R.id.btn_device_status);
+        btn_error_status = (Button)findViewById(R.id.btn_error_status);
         Button btn_update_thresholds = (Button) findViewById(R.id.btn_update_thresholds);
+
+        btn_device_status.setOnClickListener(device_status_listenser);
+        btn_error_status.setOnClickListener(error_status_listenser);
 
         //Set up threshold update button
         btn_update_thresholds.setOnClickListener(new View.OnClickListener() {
@@ -105,6 +117,10 @@ public class DeviceStatusActivity extends Activity {
             public void onReceive(Context context, Intent intent) {
                 int batt = intent.getIntExtra(NIRScanSDK.EXTRA_BATT, 0);
                 float temp = intent.getFloatExtra(NIRScanSDK.EXTRA_TEMP, 0);
+                devStatus = intent.getStringExtra(NIRScanSDK.EXTRA_DEV_STATUS);
+                errorStatus = intent.getStringExtra(NIRScanSDK.EXTRA_ERR_STATUS);
+                devbyte = intent.getByteArrayExtra(NIRScanSDK.EXTRA_DEV_STATUS_BYTE);
+                errbyte = intent.getByteArrayExtra(NIRScanSDK.EXTRA_ERR_BYTE);
                 tv_batt.setText(getString(R.string.batt_level_value, batt));
                 if(!SettingsManager.getBooleanPref(mContext, SettingsManager.SharedPreferencesKeys.tempUnits, false)){
                     tv_temp.setText(getString(R.string.temp_value_c, Float.toString(temp)));
@@ -183,4 +199,28 @@ public class DeviceStatusActivity extends Activity {
             finish();
         }
     }
+
+    private Button.OnClickListener device_status_listenser = new Button.OnClickListener()
+    {
+
+        @Override
+        public void onClick(View view) {
+            Intent graphIntent = new Intent(mContext, AdvaceDeviceStatusActivity.class);
+            graphIntent.putExtra("DEVSTATUS", devStatus);
+            graphIntent.putExtra("DEVBYTE",devbyte);
+            startActivity(graphIntent);
+        }
+    };
+
+    private Button.OnClickListener error_status_listenser = new Button.OnClickListener()
+    {
+
+        @Override
+        public void onClick(View view) {
+            Intent graphIntent = new Intent(mContext, ErrorStatusActivity.class);
+            graphIntent.putExtra("ERRSTATUS", errorStatus);
+            graphIntent.putExtra("ERRBYTE",errbyte);
+            startActivity(graphIntent);
+        }
+    };
 }

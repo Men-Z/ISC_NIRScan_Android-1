@@ -184,7 +184,7 @@ public class NewScanActivity extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private Handler mHandler;
-    private static final String DEVICE_NAME = "NIR-";
+    private static final String DEVICE_NAME = "NIR";
     private boolean connected;
     private AlertDialog alertDialog;
     private TextView tv_scan_conf;
@@ -270,7 +270,8 @@ public class NewScanActivity extends Activity {
 
     Boolean isScan = false;
     int tabPosition = 0;
-
+    private  String mainflag = "";
+    public static boolean GotoScanConfigFlag = false;
 
     private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(NIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
     private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
@@ -280,6 +281,9 @@ public class NewScanActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_scan);
+        Bundle bundle = getIntent().getExtras();
+        mainflag = bundle.getString("main" );
+
         findViewById(R.id.layout_manual).setVisibility(View.GONE);
         findViewById(R.id.layout_quickset).setVisibility(View.GONE);
         findViewById(R.id.layout_maintain).setVisibility(View.GONE);
@@ -941,6 +945,11 @@ public class NewScanActivity extends Activity {
             {
                 closeFunction();
             }
+        }
+        if(!GotoScanConfigFlag && activeConf!=null)
+        {
+            tv_scan_conf.setText(activeConf.getConfigName());
+            tv_scan_conf_manual.setText(activeConf.getConfigName());
         }
         //------------------------------------------
 
@@ -2716,7 +2725,6 @@ public class NewScanActivity extends Activity {
 
                 tv_scan_conf.setText(activeConf.getConfigName());
                 tv_scan_conf_manual.setText(activeConf.getConfigName());
-
                 //NIRScanSDK.requestSpectrumCalCoefficients();
                 //only download SpectrumCalCoefficients once
                 if(downloadspecFlag ==false)
@@ -3357,6 +3365,19 @@ public class NewScanActivity extends Activity {
                     closeFunction();
                 }
             }
+            if(mainflag!="")//Only from main page should do this
+            {
+                //set active scan config avoid the device use wpf or winform local config to set config in device
+                byte[] index = {0, 0};
+                index[0] = (byte)activeConf.getScanConfigIndex();
+                //the index over 256 should calculate index[1]
+                index[1] = (byte) (activeConf.getScanConfigIndex()/256);
+                Intent setActiveConfIntent = new Intent(NIRScanSDK.SET_ACTIVE_CONF);
+                setActiveConfIntent.putExtra(NIRScanSDK.EXTRA_SCAN_INDEX, index);
+                LocalBroadcastManager.getInstance(mContext).sendBroadcast(setActiveConfIntent);
+                mainflag = "";
+            }
+
         }
     }
     //set key--------------------------------------------------------------------------------------------

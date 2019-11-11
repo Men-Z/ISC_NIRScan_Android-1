@@ -88,6 +88,15 @@
         <activity
             android:name="com.isctechnologies.NanoScan.LicenseKey"
             android:screenOrientation="portrait" />
+        <activity
+            android:name="com.isctechnologies.NanoScan.AdvaceDeviceStatusActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="com.isctechnologies.NanoScan.ErrorStatusActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="com.isctechnologies.NanoScan.ErrorScanStatusActivity"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>

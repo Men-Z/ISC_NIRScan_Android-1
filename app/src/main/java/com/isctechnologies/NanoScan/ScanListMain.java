@@ -75,6 +75,7 @@ public class ScanListMain  extends Activity {
         public void onClick(View view) {
             Intent graphIntent = new Intent(mContext, NewScanActivity.class);
             graphIntent.putExtra("file_name", getString(R.string.newScan));
+            graphIntent.putExtra("main","main");
             startActivity(graphIntent);
         }
     };

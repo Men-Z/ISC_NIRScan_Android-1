@@ -81,7 +81,9 @@ public class NanoBLEService extends Service {
     private float temp;
     private float humidity;
     private String devStatus;
+    private  byte[]devByte;
     private String errStatus;
+    private  byte[]errByte;
     private byte[] tempThresh;
     private byte[] humidThresh;
 
@@ -139,6 +141,7 @@ public class NanoBLEService extends Service {
     private static BroadcastReceiver mReadActivateStateReceiver;
     private static BroadcastReceiver mUUIDRequestReceiver;
     private static BroadcastReceiver mBatteryRequestReceiver;
+    private static BroadcastReceiver mClearErrorStatusReceiver;
 
     public static final String ACTION_SCAN_STARTED = "com.isctechnologies.NanoScan.bluetooth.service.ACTION_SCAN_STARTED";
 
@@ -414,6 +417,7 @@ public class NanoBLEService extends Service {
                     NIRScanSDK.getDeviceStatus();
                 } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GGIS_DEV_STATUS)) {
                     byte[] data = characteristic.getValue();
+                    devByte = data;
                     final StringBuilder stringBuilder = new StringBuilder(data.length);
                     for (byte byteChar : data)
                         stringBuilder.append(String.format("%02X", byteChar));
@@ -423,6 +427,7 @@ public class NanoBLEService extends Service {
                     NIRScanSDK.getErrorStatus();
                 } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GGIS_ERR_STATUS)) {
                     byte[] data = characteristic.getValue();
+                    errByte = data;
                     final StringBuilder stringBuilder = new StringBuilder(data.length);
                     for (byte byteChar : data)
                         stringBuilder.append(String.format("%02X", byteChar));
@@ -436,6 +441,8 @@ public class NanoBLEService extends Service {
                     intent.putExtra(NIRScanSDK.EXTRA_HUMID, humidity);
                     intent.putExtra(NIRScanSDK.EXTRA_DEV_STATUS, devStatus);
                     intent.putExtra(NIRScanSDK.EXTRA_ERR_STATUS, errStatus);
+                    intent.putExtra(NIRScanSDK.EXTRA_DEV_STATUS_BYTE, devByte);
+                    intent.putExtra(NIRScanSDK.EXTRA_ERR_BYTE, errByte);
                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
                 } else if (characteristic.getUuid().equals(NIRScanSDK.NanoGATT.GSCIS_NUM_STORED_CONF)) {
                     byte[] data = characteristic.getValue();
@@ -1554,6 +1561,15 @@ public class NanoBLEService extends Service {
             }
         };
 
+        mClearErrorStatusReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (debug)
+                    Log.d(TAG, "Clear Error Status");
+                NIRScanSDK.ClearErrorStatus();
+            }
+        };
+
         //Register all needed receivers
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mDataReceiver, new IntentFilter(NIRScanSDK.SEND_DATA));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mInfoRequestReceiver, new IntentFilter(NIRScanSDK.GET_INFO));
@@ -1578,6 +1594,7 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mReadActivateStateReceiver, new IntentFilter(NIRScanSDK.ACTION_READ_ACTIVATE_STATE));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mUUIDRequestReceiver, new IntentFilter(NIRScanSDK.GET_UUID));
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mBatteryRequestReceiver, new IntentFilter(NIRScanSDK.GET_BATTERY));
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mClearErrorStatusReceiver, new IntentFilter(NIRScanSDK.CLEAR_ERROR_STATUS));
 
     }
 
@@ -1610,6 +1627,7 @@ public class NanoBLEService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mWriteScanConfigReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mReadActivateStateReceiver);
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mBatteryRequestReceiver);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mClearErrorStatusReceiver);
     }
 
     @Override

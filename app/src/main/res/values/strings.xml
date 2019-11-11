@@ -84,6 +84,16 @@
      <string name="humid_threshold">Humidity Threshold</string>
      <string name="relative_humid">% RH</string>
      <string name="not_supported">Not Supported</string>
+    <string name="click">Click</string>
+    <string name="clear_error">Clear Error</string>
+    <string name="detail_device_status">Detailed Device Status</string>
+    <string name="detail_error_status">Detailed Error Status</string>
+    <string name="detail_scan_error_status">Detailed Scan Error Status</string>
+    <string name="detail_adc_error_status">Detailed ADC Error Status</string>
+    <string name="detail_hw_error_status">Detailed Hardware Error Status</string>
+    <string name="detail_tmp006_error_status">Detailed TMP006 Error Status</string>
+    <string name="detail_hdc1000_error_status">Detailed HDC1000 Error Status</string>
+    <string name="detail_battery_error_status">Detailed Battery Error Status</string>
 
      <string name="version">v%1$s (%2$d)</string>
 
@@ -259,5 +269,14 @@
          <item>59.67</item>
          <item>60.84</item>
      </string-array>
+    <string-array name="detail_device_status">
+        <item>Tiva</item>
+        <item>Scanning</item>
+        <item>BLE stack</item>
+        <item>BLE connection</item>
+        <item>Scan Data Interpreting</item>
+        <item>Scan Button Pressed</item>
+        <item>Battery in charge</item>
+    </string-array>
 
  </resources>

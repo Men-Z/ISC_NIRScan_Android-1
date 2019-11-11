@@ -10,8 +10,8 @@ android {
         applicationId "com.isctechnologies.ISCScanNano"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode  12
-        versionName "2.9"
+        versionCode  0
+        versionName "2.10"
         externalNativeBuild {
             cmake {
                 cppFlags ""

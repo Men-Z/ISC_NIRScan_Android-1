@@ -68,7 +68,7 @@ public class ScanConfActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scan_conf);
-
+        NewScanActivity.GotoScanConfigFlag = true;
         mContext = this;
         ScanConfigName.clear();
         //Set up the action bar title, and enable the back button
