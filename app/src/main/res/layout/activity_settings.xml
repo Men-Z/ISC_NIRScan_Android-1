@@ -6,7 +6,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.isctechnologies.NanoScan.SettingsActivity">
+    tools:context="com.Innospectra.NanoScan.SettingsViewActivity">
 
     <LinearLayout
         android:id="@+id/ll_logo"
@@ -29,78 +29,44 @@
             android:textColor="@color/black" />
 
     </LinearLayout>
-
     <RelativeLayout
-        android:id="@+id/rl_temperature"
+        android:id="@+id/rl_devicefilter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/ll_logo"
         android:paddingTop="@dimen/dip8">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:text="@string/temperature"
-            android:textColor="@color/black" />
-
-        <ToggleButton
-            android:id="@+id/tb_temp"
-            android:layout_width="wrap_content"
+        <EditText
+            android:id="@+id/et_devicefilter"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:textOff="&#176;C"
-            android:textOn="&#176;F" />
-
-    </RelativeLayout>
-
-    <View
-        android:id="@+id/view_temp_divider"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/px1"
-        android:layout_below="@id/rl_temperature"
-        android:background="@color/black"/>
-
-    <RelativeLayout
-        android:id="@+id/rl_freq"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/view_temp_divider"
-        android:paddingTop="@dimen/dip8">
+            android:imeOptions="actionDone"
+            android:singleLine="true"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
-            android:text="@string/spatial_freq"
+            android:layout_toStartOf="@id/et_devicefilter"
+            android:text="@string/device_filter"
             android:textColor="@color/black" />
 
-        <ToggleButton
-            android:id="@+id/tb_spatial"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:textOff="Wavenumber"
-            android:textOn="Wavelength" />
-
     </RelativeLayout>
-
     <View
-        android:id="@+id/view_freq_divider"
+        android:id="@+id/view_device_filter"
         android:layout_width="match_parent"
         android:layout_height="@dimen/px1"
-        android:layout_below="@id/rl_freq"
+        android:layout_below="@id/rl_devicefilter"
         android:background="@color/black"/>
 
     <RelativeLayout
         android:id="@+id/rl_setNano"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/view_freq_divider"
+        android:layout_below="@id/rl_devicefilter"
         android:paddingTop="@dimen/dip8">
 
         <Button

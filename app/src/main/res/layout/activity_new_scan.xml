@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:id="@+id/layout_main"
-    tools:context="com.isctechnologies.NanoScan.NewScanActivity">
+    tools:context="com.Innospectra.NanoScan.ScanViewActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -118,7 +118,7 @@
                     android:layout_below="@id/ll_conf">
 
                     <TextView
-                        android:id="@+id/tv_continuous"
+                        android:id="@+id/tv_normal_continuous"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -378,7 +378,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/repeat"
+                        android:text="@string/scan_repeat"
                         android:textAppearance="?android:textAppearanceMedium" />
 
                     <EditText
@@ -705,7 +705,7 @@
                     android:layout_below="@id/ly_ex_time">
 
                     <TextView
-                        android:id="@+id/continuous_scan_mode"
+                        android:id="@+id/tv_quickset_continuous_scan_mode"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -736,7 +736,7 @@
                     android:minHeight="@dimen/dip40">
 
                     <TextView
-                        android:id="@+id/tv_scan_interval_time"
+                        android:id="@+id/tv_quickset_scan_interval_time"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -770,7 +770,7 @@
                     android:minHeight="@dimen/dip40">
 
                     <TextView
-                        android:id="@+id/tv_repeat_quick"
+                        android:id="@+id/tv_quickset_continuous_repeat"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"

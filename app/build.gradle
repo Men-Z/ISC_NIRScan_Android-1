@@ -7,16 +7,11 @@ android {
     buildToolsVersion "28.0.2"
 
     defaultConfig {
-        applicationId "com.isctechnologies.ISCScanNano"
+        applicationId "com.Innospectra.ISCScanNano"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode  13
-        versionName "2.10"
-        externalNativeBuild {
-            cmake {
-                cppFlags ""
-            }
-        }
+        versionCode  1
+        versionName "2.11"
     }
     sourceSets {
         main {
@@ -29,12 +24,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    externalNativeBuild {
-        cmake {
-            path "CMakeLists.txt"
-        }
-    }
-
 }
 
 repositories {
@@ -57,4 +46,5 @@ dependencies {
     compile 'com.android.support:support-v4:28.0.0'
     compile 'com.opencsv:opencsv:3.6'
     compile project(':MPChartLib')
+    implementation(name:'ISCSDK-release', ext:'aar')
 }

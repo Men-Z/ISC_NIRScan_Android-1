@@ -13,26 +13,18 @@
     <string name="title_activity_settings">Settings</string>
 
     <string-array name="info_title_array">
-        <!--- <item>TI DLP Website</item>
-         <item>InnoSpectra Spectrometer Website</item>-->
         <item>Purchase a ISC NIRScan</item>
-        <!---<item>Support Forums</item>-->
         <item>License</item>
     </string-array>
 
     <string-array name="info_body_array">
-        <!--- <item>Learn how TI is revolutionizing mobile spectroscopy</item>
          <item>Learn about InnoSpectra, TI\'s Strategic Design Partner</item>-->
          <item>Learn how to buy your own Evaluation Module</item>
-        <!--- <item>Go deep with TI\'s E2E Technical Support Forums</item>-->
          <item>About License of this App</item>
      </string-array>
 
      <string-array name="info_url_array">
-         <!---<item>http://www.ti.com/lsds/ti/dlp/advanced-light-control/wavelength-control.page</item>
-         <item>https://www.young-green.com/products_1.php</item>-->
          <item>http://www.ti.com/tool/dlpnirnanoevm</item>
-         <!---<item>http://e2e.ti.com/support/dlp__mems_micro-electro-mechanical_systems/f/983</item>-->
          <item>http://e2e.ti.com/support/dlp__mems_micro-electro-mechanical_systems/f/983</item>
      </string-array>
 
@@ -42,6 +34,7 @@
      <string name="clear_nano">Clear My Device</string>
      <string name="go">Go!</string>
      <string name="forget">Forget</string>
+     <string name="device_filter">Device Filter</string>
 
      <string name="title_activity_graph">Graph</string>
 
@@ -187,7 +180,7 @@
      <string name="aver_scan">Average Scans (times)</string>
      <string name="ex_time">Exposure Time (ms)</string>
      <string name="continuous_scan_mode">Continuous Scan Mode</string>
-     <string name="scan_interval_time">Scan Interval Time</string>
+     <string name="scan_interval_time">Scan Interval Time (sec)</string>
      <string name="set_value">Set all config</string>
      <string name="section">Section</string>
      <string name="config_index">Config Index</string>
@@ -200,8 +193,11 @@
      <string name="scan_width_add">Width(2-52): 2.34nm</string>
      <string name="reference">Replace Factory Reference</string>
      <string name="license">License</string>
+     <string name="lock_btn">Lock Button</string>
+    <string name="no">No</string>
+    <string name="yes">Yes</string>
 
-     <string-array name="scan_method_array">
+    <string-array name="scan_method_array">
          <item>Column</item>
          <item>Hadamard</item>
      </string-array>
