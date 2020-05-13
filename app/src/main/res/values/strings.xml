@@ -196,6 +196,7 @@
      <string name="lock_btn">Lock Button</string>
     <string name="no">No</string>
     <string name="yes">Yes</string>
+    <string name="activation">Activation</string>
 
     <string-array name="scan_method_array">
          <item>Column</item>

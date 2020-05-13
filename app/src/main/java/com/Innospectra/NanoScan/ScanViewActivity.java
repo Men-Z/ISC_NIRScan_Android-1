@@ -1712,10 +1712,8 @@ public class ScanViewActivity extends Activity {
                 }
                 else
                 {
-                    byte data[] = new byte[1];
-                    data[0] = (byte) 0x01;
                     //Get the scan config of the device
-                    ISCNIRScanSDK.ReadCurrentScanConfig(data);
+                    ISCNIRScanSDK.ReadCurrentScanConfig();
                 }
             }
             else if((int)status[0] == -1)
@@ -3181,7 +3179,7 @@ public class ScanViewActivity extends Activity {
         alertDialogBuilder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface arg0, int arg1) {
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(ISCNIRScanSDK.START_SCAN));
+                PerformScan(0);
                 DisableAllComponent();
                 calProgress.setVisibility(View.VISIBLE);
                 btn_scan.setText(getString(R.string.scanning));
@@ -3278,7 +3276,6 @@ public class ScanViewActivity extends Activity {
                 storeStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.ReferenceScan, "ReferenceScan");
                 ISCNIRScanSDK.ScanConfig(ActiveConfigByte,ISCNIRScanSDK.ScanConfig.SET);
                 saveReference = true;
-                //finish();
             }
         });
 

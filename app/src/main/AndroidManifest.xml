@@ -38,6 +38,7 @@
             android:label="@string/title_activity_settings"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme" />
+
         <activity
             android:name="com.Innospectra.NanoScan.ScanViewActivity"
             android:screenOrientation="portrait"
@@ -73,6 +74,7 @@
             android:theme="@style/AppTheme" />
         <activity
             android:name="com.Innospectra.NanoScan.ActivationViewActivity"
+            android:label="@string/activation"
             android:screenOrientation="portrait" />
         <activity
             android:name="com.Innospectra.NanoScan.AdvanceDeviceStatusViewActivity"
