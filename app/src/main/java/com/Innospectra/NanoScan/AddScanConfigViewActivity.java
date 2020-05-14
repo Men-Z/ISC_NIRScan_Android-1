@@ -1668,9 +1668,12 @@ public class AddScanConfigViewActivity extends Activity {
         String isoString = et_name.getText().toString();
         int name_size = isoString.length();
         byte[] ConfigNamebytes=isoString.getBytes();
-        for(int i=0;i<name_size;i++)
+        for(int i=0;i<=name_size;i++)
         {
-            write_scan_config.configName[i] = ConfigNamebytes[i];
+            if(i == name_size)
+                write_scan_config.configName[i] = 0;
+            else
+                write_scan_config.configName[i] = ConfigNamebytes[i];
         }
         write_scan_config.write_scanType = 2;
         //transfer SerialNumber to byte
