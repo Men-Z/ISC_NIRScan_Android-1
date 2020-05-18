@@ -49,25 +49,32 @@ public class InformationViewActivity extends Activity {
         for (index = 0; index < length; index++) {
             infoManagerArrayList.add(new InfoManager(
                     getResources().getStringArray(R.array.info_title_array)[index],
-                    getResources().getStringArray(R.array.info_body_array)[index],
-                    getResources().getStringArray(R.array.info_url_array)[index]));
+                    getResources().getStringArray(R.array.info_body_array)[index]));
         }
         final InformationAdapter adapter = new InformationAdapter(this, R.layout.row_info_item, infoManagerArrayList);
         infoList.setAdapter(adapter);
         infoList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if(i==1)
+                if(i==0)
                 {
-                    Intent licenseIntent = new Intent(mContext, LicenseViewActivity.class);
-                    startActivity(licenseIntent);
+                    Intent intent = new Intent();
+                    intent.setAction(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse("http://www.inno-spectra.com/index_en"));
+                    startActivity(intent);
                 }
-                else
+                else if(i==1)
                 {
                     Intent data=new Intent(Intent.ACTION_SENDTO);
                     data.setData(Uri.parse("mailto:jeremy.hsieh@Inno-spectra.com"));
                     data.putExtra(Intent.EXTRA_SUBJECT, "NIRScan Nano Inquiry");
                     startActivity(data);
+
+                }
+                else
+                {
+                    Intent licenseIntent = new Intent(mContext, LicenseViewActivity.class);
+                    startActivity(licenseIntent);
                 }
             }
         });
@@ -108,12 +115,10 @@ public class InformationViewActivity extends Activity {
 
         private String infoTitle;
         private String infoBody;
-        private String infoURL;
 
-        public InfoManager(String infoTitle, String infoBody, String infoURL) {
+        public InfoManager(String infoTitle, String infoBody) {
             this.infoTitle = infoTitle;
             this.infoBody = infoBody;
-            this.infoURL = infoURL;
         }
 
         public String getInfoTitle() {

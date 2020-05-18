@@ -13,13 +13,14 @@
     <string name="title_activity_settings">Settings</string>
 
     <string-array name="info_title_array">
-        <item>Purchase a ISC NIRScan</item>
+        <item>InnoSpectra Corp. Website</item>
+        <item>Purchase ISC NIRScan Devices</item>
         <item>License</item>
     </string-array>
 
     <string-array name="info_body_array">
-         <item>Learn about InnoSpectra, TI\'s Strategic Design Partner</item>-->
-         <item>Learn how to buy your own Evaluation Module</item>
+         <item>Learn about InnoSpectra Corp., a professional handheld spectrometers manufacturer!</item>
+         <item>Learn about InnoSpectra, TI\'s Strategic Design Partner</item>
          <item>About License of this App</item>
      </string-array>
 
