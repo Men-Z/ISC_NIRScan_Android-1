@@ -54,6 +54,9 @@ public class AdvanceErrorStatusViewActivity extends Activity {
                 case 8://Battery
                     ab.setTitle(getString(R.string.detail_battery_error_status));
                     break;
+                case 11://System
+                    ab.setTitle(getString(R.string.detail_system_error_status));
+                    break;
             }
 
         }
@@ -69,6 +72,7 @@ public class AdvanceErrorStatusViewActivity extends Activity {
         int[]  images7 = {R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,
                 R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray};
         int[]  images8 = {R.drawable.leg_gray};
+        int[]  images11 = {R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray};
 
         listView = (ListView) findViewById(R.id.error_scan_status_listview);
         String[] title0 = {"DLPC150 Boot Error", "DLPC150 Init Error", "DLPC150 Lamp Driver Error", "DLPC150 Crop Image Failed", "ADC Data Error", "CFG Invalid", "Scan Pattern Streaming", "DLPC150 Read Error"};
@@ -77,6 +81,7 @@ public class AdvanceErrorStatusViewActivity extends Activity {
         String[] title6 = {"Manufacturing Id", "Device Id", "Reset", "Read Register", "Write Register", "Timeout", "I2C"};
         String[] title7 = {"Manufacturing Id", "Device Id", "Reset", "Read Register", "Write Register", "Timeout", "I2C"};
         String[] title8 = {"Under Voltage"};
+        String[] title11 = {"Unstable Lamp ADC", "Unstable Peak Intensity", "ADS1255 Error", "Auto PGA Error"};
         List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
         switch (pos) {
             case 0://Scan
@@ -190,6 +195,27 @@ public class AdvanceErrorStatusViewActivity extends Activity {
                     Map<String, Object> map = new HashMap<String, Object>();
                     map.put("images", images8[i]);
                     map.put("title", title8[i]);
+                    list.add(map);
+                    SimpleAdapter adapter = new SimpleAdapter(this, list,
+                            R.layout.activity_error_status_item, new String[]{"images", "title"}, new int[]{
+                            R.id.image, R.id.error_test});
+                    listView.setAdapter(adapter);
+                }
+                break;
+            case 11://System
+                int data11 = errbyte[17]&0xFF;//avoid negative number
+                int error_scan11 = 0x00000001;
+                for (int j = 0; j < 4; j++) {
+                    int ret = data11 & error_scan11;
+                    if (ret == error_scan11) {
+                        images11[j] = R.drawable.led_r;
+                    }
+                    error_scan11 = error_scan11 << 1;
+                }
+                for (int i = 0; i < images11.length; i++) {
+                    Map<String, Object> map = new HashMap<String, Object>();
+                    map.put("images", images11[i]);
+                    map.put("title", title11[i]);
                     list.add(map);
                     SimpleAdapter adapter = new SimpleAdapter(this, list,
                             R.layout.activity_error_status_item, new String[]{"images", "title"}, new int[]{

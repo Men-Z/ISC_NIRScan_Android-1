@@ -155,7 +155,7 @@
             <LinearLayout
                 android:id="@+id/ll_total_section"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/dip40"
+                android:layout_height="wrap_content"
                 android:layout_below="@id/ll_repeat">
 
                 <TextView
@@ -407,7 +407,7 @@
                 <LinearLayout
                     android:id="@+id/ll_res1"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_spec_end1">
 
                     <TextView
@@ -439,7 +439,7 @@
                 <LinearLayout
                     android:id="@+id/ly_exposure1"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_res1">
 
                     <TextView
@@ -613,7 +613,7 @@
                 <LinearLayout
                     android:id="@+id/ll_res2"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_spec_end2">
 
                     <TextView
@@ -645,7 +645,7 @@
                 <LinearLayout
                     android:id="@+id/ly_exposure2"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_res2">
 
                     <TextView
@@ -819,7 +819,7 @@
                 <LinearLayout
                     android:id="@+id/ll_res3"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_spec_end3">
 
                     <TextView
@@ -851,7 +851,7 @@
                 <LinearLayout
                     android:id="@+id/ly_exposure3"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_res3">
 
                     <TextView
@@ -1025,7 +1025,7 @@
                 <LinearLayout
                     android:id="@+id/ll_res4"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_spec_end4">
 
                     <TextView
@@ -1057,7 +1057,7 @@
                 <LinearLayout
                     android:id="@+id/ly_exposure4"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_res4">
 
                     <TextView
@@ -1231,7 +1231,7 @@
                 <LinearLayout
                     android:id="@+id/ll_res5"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_spec_end5">
 
                     <TextView
@@ -1263,7 +1263,7 @@
                 <LinearLayout
                     android:id="@+id/ly_exposure5"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_res5">
 
                     <TextView

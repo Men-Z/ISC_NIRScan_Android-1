@@ -45,10 +45,38 @@
         android:background="@color/gray" />
 
     <LinearLayout
-        android:id="@+id/ll_temp"
+        android:id="@+id/ll_lamptime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/ll_batt"
+        android:gravity="center"
+        android:minHeight="@dimen/dip32"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/lamptime" />
+
+        <TextView
+            android:id="@+id/tv_lamptime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/px1"
+        android:layout_below="@id/ll_lamptime"
+        android:background="@color/gray" />
+
+    <LinearLayout
+        android:id="@+id/ll_temp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ll_lamptime"
         android:gravity="center"
         android:minHeight="@dimen/dip32"
         android:orientation="horizontal">

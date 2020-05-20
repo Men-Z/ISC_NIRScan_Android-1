@@ -114,7 +114,7 @@
                 <LinearLayout
                     android:id="@+id/ll_continuous"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_conf">
 
                     <TextView
@@ -143,7 +143,7 @@
                 <LinearLayout
                     android:id="@+id/ly_normal_interval_time"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ll_continuous">
 
                     <TextView
@@ -175,7 +175,7 @@
                 <LinearLayout
                     android:id="@+id/ly_normal_repeat"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ly_normal_interval_time">
 
                     <TextView
@@ -207,7 +207,7 @@
                 <LinearLayout
                     android:id="@+id/ll_continuous_stop"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ly_normal_repeat">
 
                     <TextView
@@ -336,7 +336,7 @@
                 <LinearLayout
                     android:id="@+id/ly_pga"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ly_lamp">
 
                     <TextView
@@ -538,7 +538,7 @@
                 <LinearLayout
                     android:id="@+id/ly_spec_end"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ly_spec_start">
 
                     <TextView
@@ -798,7 +798,7 @@
                 <LinearLayout
                     android:id="@+id/ll_continuous_stop_quick"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/dip40"
+                    android:layout_height="wrap_content"
                     android:layout_below="@id/ly_repeat_quick">
 
                     <TextView

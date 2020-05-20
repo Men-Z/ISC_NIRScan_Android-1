@@ -35,8 +35,8 @@ public class ErrorStatusViewActivity extends Activity {
     private Button btn_clear_error;
 
     int[] images = { R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,
-            R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray};
-    String[] title = { "Scan", "ADC", "EEPROM", "Bluetooth", "Spectrum Library", "Hardware","TMP006" ,"HDC1000","Battery","Memory","UART"};
+            R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray};
+    String[] title = { "Scan", "ADC", "EEPROM", "Bluetooth", "Spectrum Library", "Hardware","TMP006" ,"HDC1000","Battery","Memory","UART","System"};
     private static Boolean GotoOtherPage = false;
     public static final String NOTIFY_BACKGROUND = "com.Innospectra.NanoScan.ErrorStatus.notifybackground";
     private final BroadcastReceiver BackgroundReciver = new BackGroundReciver();
@@ -61,7 +61,7 @@ public class ErrorStatusViewActivity extends Activity {
         bufByteError  = errbyte;
 
         int[] images = { R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,
-                R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray};
+                R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray, R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray,R.drawable.leg_gray};
 
         int data = errbyte[0]&0xFF | (errbyte[1] << 8);//0XFF avoid nagtive number
 
@@ -77,7 +77,7 @@ public class ErrorStatusViewActivity extends Activity {
         }
         error_scan = error_scan<<1;
 
-        for(int j=2;j<11;j++)
+        for(int j=2;j<12;j++)
         {
             int ret = data & error_scan;
             if(ret == error_scan)
@@ -145,6 +145,12 @@ public class ErrorStatusViewActivity extends Activity {
                     graphIntent8.putExtra("POS",position);
                     graphIntent8.putExtra("ERRBYTE",bufByteError);
                     startActivity(graphIntent8);
+                    break;
+                case 11://System
+                    Intent graphIntent11 = new Intent(mContext, AdvanceErrorStatusViewActivity.class);
+                    graphIntent11.putExtra("POS",position);
+                    graphIntent11.putExtra("ERRBYTE",bufByteError);
+                    startActivity(graphIntent11);
                     break;
             }
         }

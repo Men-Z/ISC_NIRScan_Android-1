@@ -30,6 +30,7 @@ public class DeviceStatusViewActivity extends Activity {
     private TextView tv_batt;
     private TextView tv_temp;
     private TextView tv_humid;
+    private TextView tv_lamptime;
     Button btn_update_thresholds;
     private Button btn_device_status;
     private Button btn_error_status;
@@ -58,6 +59,7 @@ public class DeviceStatusViewActivity extends Activity {
         tv_batt = (TextView)findViewById(R.id.tv_batt);
         tv_temp = (TextView)findViewById(R.id.tv_temp);
         tv_humid = (TextView)findViewById(R.id.tv_humid);
+        tv_lamptime = (TextView)findViewById(R.id.tv_lamptime);
         btn_update_thresholds = (Button) findViewById(R.id.btn_update_thresholds);
         btn_device_status = (Button)findViewById(R.id.btn_device_status);
         btn_error_status = (Button)findViewById(R.id.btn_error_status);
@@ -78,6 +80,7 @@ public class DeviceStatusViewActivity extends Activity {
                 int batt = intent.getIntExtra(ISCNIRScanSDK.EXTRA_BATT, 0);
                 float temp = intent.getFloatExtra(ISCNIRScanSDK.EXTRA_TEMP, 0);
                 float humid = intent.getFloatExtra(ISCNIRScanSDK.EXTRA_HUMID, 0);
+                long lamptime = intent.getLongExtra(ISCNIRScanSDK.EXTRA_LAMPTIME,0);
                 devStatus = intent.getStringExtra(ISCNIRScanSDK.EXTRA_DEV_STATUS);
                 errorStatus = intent.getStringExtra(ISCNIRScanSDK.EXTRA_ERR_STATUS);
                 devbyte = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_DEV_STATUS_BYTE);
@@ -85,6 +88,7 @@ public class DeviceStatusViewActivity extends Activity {
                 tv_batt.setText(getString(R.string.batt_level_value, batt));
                 tv_temp.setText(getString(R.string.temp_value_c, Float.toString(temp)));
                 tv_humid.setText(getString(R.string.humid_value,Float.toString(humid)));
+                tv_lamptime.setText(GetLampTimeString(lamptime));
                 ProgressBar pb = (ProgressBar)findViewById(R.id.pb_status);
                 pb.setVisibility(View.INVISIBLE);
                 setActivityTouchDisable(false);
@@ -94,6 +98,27 @@ public class DeviceStatusViewActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(mStatusReceiver, new IntentFilter(ISCNIRScanSDK.ACTION_STATUS));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(DisconnReceiver, disconnFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(BackgroundReciver, new IntentFilter(NOTIFY_BACKGROUND));
+    }
+    private String GetLampTimeString(long lamptime)
+    {
+        String lampusage = "";
+        if (lamptime / 86400 != 0)
+        {
+            lampusage += lamptime / 86400 + "day ";
+            lamptime -= 86400 * (lamptime / 86400);
+        }
+        if (lamptime / 3600 != 0)
+        {
+            lampusage += lamptime / 3600 + "hr ";
+            lamptime -= 3600 * (lamptime / 3600);
+        }
+        if (lamptime / 60 != 0)
+        {
+            lampusage += lamptime / 60 + "min ";
+            lamptime -= 60 * (lamptime / 60);
+        }
+        lampusage += lamptime + "sec ";
+        return lampusage;
     }
     //region Button vent
     private Button.OnClickListener Update_Threshold_Click = new Button.OnClickListener()

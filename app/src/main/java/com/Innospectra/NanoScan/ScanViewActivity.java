@@ -1255,6 +1255,8 @@ public class ScanViewActivity extends Activity {
         btn_quickset.setClickable(false);
         btn_manual.setClickable(false);
         btn_maintain.setClickable(false);
+        mMenu.findItem(R.id.action_settings).setEnabled(false);
+        mMenu.findItem(R.id.action_key).setEnabled(false);
     }
 
     private void Disable_Stop_Continous_button()
@@ -1363,6 +1365,8 @@ public class ScanViewActivity extends Activity {
         btn_manual.setClickable(true);
         btn_maintain.setClickable(true);
         setActivityTouchDisable(false);
+        mMenu.findItem(R.id.action_settings).setEnabled(true);
+        mMenu.findItem(R.id.action_key).setEnabled(true);
     }
     /**
      * Unlock device will open all scan mode
