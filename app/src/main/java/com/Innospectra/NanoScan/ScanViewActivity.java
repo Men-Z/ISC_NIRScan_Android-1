@@ -18,6 +18,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.MediaScannerConnection;
 import android.os.AsyncTask;
@@ -736,20 +738,21 @@ public class ScanViewActivity extends Activity {
             HWrev = intent.getStringExtra(ISCNIRScanSDK.EXTRA_HW_REV);
             Tivarev = intent.getStringExtra(ISCNIRScanSDK.EXTRA_TIVA_REV);
             Specrev = intent.getStringExtra(ISCNIRScanSDK.EXTRA_SPECTRUM_REV);
-            if(Tivarev.substring(0,1) .equals("3") && (HWrev.substring(0,1).equals("N") || HWrev.substring(0,1).equals("E")))
-            {
+            if(Tivarev.substring(0,1) .equals("3") && (HWrev.substring(0,1).equals("E")|| HWrev.substring(0,1).equals("O")))
                 isExtendVer = true;
-            }
+            else
+                isExtendVer = false;
+            if(HWrev.substring(0,1).equals("N"))
+                Dialog_Pane_Finish("Not support","Not to support the N version of the main board.\nWill go to the home page.");
             else
             {
-                isExtendVer = false;
+                //Send broadcast to notify NanoBLEService to know the device is extension or not
+                Notify_IsEXTVersion();
+                GetFWLevel(Tivarev);
+                InitParameter();
+                //Get the uuid of the device
+                ISCNIRScanSDK.GetUUID();
             }
-            //Send broadcast to notify NanoBLEService to know the device is extension or not
-            Notify_IsEXTVersion();
-            GetFWLevel(Tivarev);
-            InitParameter();
-            //Get the uuid of the device
-            ISCNIRScanSDK.GetUUID();
         }
     }
     /**
@@ -769,6 +772,8 @@ public class ScanViewActivity extends Activity {
                  */
                 fw_level = FW_LEVEL.LEVEL_EXT_1;//>=3.3.0
             }
+            else if(Integer.parseInt(TivaArray[1])==2 && Integer.parseInt(TivaArray[2])==1 )
+                fw_level = FW_LEVEL.LEVEL_EXT_1;//==3.2.1
         }
         else
         {
@@ -2107,7 +2112,7 @@ public class ScanViewActivity extends Activity {
             ISCNIRScanSDK.ControlPhysicalButton(ISCNIRScanSDK.PhysicalButton.Lock);
             delaytime = 300;
         }
-        if(getStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.Activacatestatus, null).contains("Activated") ==false)
+        if(getStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.Activacatestatus, "").contains("Activated") ==false)
         {
             closeFunction();
         }
@@ -2192,7 +2197,7 @@ public class ScanViewActivity extends Activity {
         String widthnm[] ={"","","2.34","3.51","4.68","5.85","7.03","8.20","9.37","10.54","11.71","12.88","14.05","15.22","16.39","17.56","18.74"
                 ,"19.91","21.08","22.25","23.42","24.59","25.76","26.93","28.10","29.27","30.44","31.62","32.79","33.96","35.13","36.30","37.47","38.64","39.81"
                 ,"40.98","42.15","43.33","44.50","45.67","46.84","48.01","49.18","50.35","51.52","52.69","53.86","55.04","56.21","57.38","58.55","59.72","60.89"};
-        String exposureTime[] = {"0.635ms","1.27ms"," 2.54ms"," 5.08ms","15.24ms","30.48ms","60.96ms"};
+        String exposureTime[] = {"0.635","1.27"," 2.54"," 5.08","15.24","30.48","60.96"};
         int index = 0;
         double temp;
         double humidity;
@@ -2213,11 +2218,11 @@ public class ScanViewActivity extends Activity {
             Date datetime = new Date();
             SimpleDateFormat format = new SimpleDateFormat("MM/dd/yy-HH:mm:ss");
             newdate = format.format(datetime);
-            CSV[19][4] = newdate;
+            CSV[7][8] = newdate;
         }
         else
         {
-            CSV[19][4] = Reference_Info.refday[1] + "/"+ Reference_Info.refday[2] + "/"+ Reference_Info.refday[0] + "-" + Reference_Info.refday[3] + ":" + Reference_Info.refday[4] + ":" + Reference_Info.refday[5];
+            CSV[7][8] = Reference_Info.refday[1] + "/"+ Reference_Info.refday[2] + "/"+ Reference_Info.refday[0] + "-" + Reference_Info.refday[3] + ":" + Reference_Info.refday[4] + ":" + Reference_Info.refday[5];
         }
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
@@ -2249,110 +2254,132 @@ public class ScanViewActivity extends Activity {
         // make the scanner aware of the location and the files you want to see
         MediaScannerConnection.scanFile(this, new String[] {csvOS}, null, null);
         // Section information field names
-        CSV[0][0] = "***ISC NIRScan Scan Result ***,";
-        CSV[2][0] = "---General Information---";
-        CSV[12][0] = "---Device Status Information---,";
-        CSV[12][3] = "---Reference Scan Information---";
-        CSV[22][0] = "---Scan Config Information---";
-        CSV[34][0] = "---Scan Data---";
-        //General Information
-        CSV[3][0] = "Model Number:,";
-        CSV[4][0] = "UUID:,";
-        CSV[4][2] = "Serial Number:,";
-        CSV[5][0] = "Hardware Rev:,";
-        CSV[6][0] = "Tiva Rev:,";
-        CSV[7][0] = "Shift Vector Coefficient:,";
-        CSV[8][0] = "Pixel to Wavelength Coefficient:,";
-        CSV[9][0] = "System Temp:,";
-        CSV[9][2] = "System Humidity:,";
-        CSV[10][0] = "Lamp Intensity:,";
+        CSV[0][0] = "***Scan Config Information***,";
+        CSV[1][0] = "Scan Config Name:,";
+        CSV[2][0] = "Scan Config Type:,";
+        CSV[3][0] = "Section Config Type:,";
+        CSV[4][0] = "Start Wavelength (nm):,";
+        CSV[5][0] = "End Wavelength (nm):,";
+        CSV[6][0] = "Pattern Width (nm):,";
+        CSV[7][0] = "Exposure (ms):,";
+        CSV[8][0] = "Digital Resolution:,";
+        CSV[9][0] = "Num Repeats:,";
+        CSV[10][0] = "PGA Gain:,";
+        CSV[11][0] = "System Temp (C):,";
+        CSV[12][0] = "Humidity (%):,";
+        CSV[13][0] = "Battery Capacity (%):,";
+        /*if(isExtendVer)
+            CSV[14][0] = "Lamp ADC(VM1/VM2/CM1/CM2):,";
+        else
+            CSV[14][0] = "Lamp Intensity:,";*/
+        CSV[14][0] = "Lamp Intensity:,";
+        CSV[15][0] = "Data Date-Time:,";
+        //CSV[16][0] = "Total Measurement Time in sec:,"
 
-        CSV[3][1] = model_name + ",";
-        CSV[4][1] = uuid + ",";
-        CSV[4][3] = serial_num + ",";
-        CSV[5][1] = HWrev + ",";
-        CSV[6][1] = Tivarev + ",";
+        CSV[1][1] = configname  + ",";
+        CSV[2][1] = "Slew,";
+        CSV[2][2] = "Num Section:,";
+        CSV[2][3] = Integer.toString(numSections) + ",";
 
-        temp = Scan_Config_Info.systemp[0];
-        temp = temp/100;
-        CSV[9][1] = temp + "C" + ",";
-        humidity =  Scan_Config_Info.syshumidity[0];
-        humidity =  humidity/100;
-        CSV[9][3] = humidity + "%RH" + ",";
-        CSV[10][1] = Scan_Config_Info.lampintensity[0] + ",";
-
-        CSV[7][1] = Scan_Config_Info.shift_vector_coff[0] + ",";
-        CSV[7][2] = Scan_Config_Info.shift_vector_coff[1] + ",";
-        CSV[7][3] = Scan_Config_Info.shift_vector_coff[2] + ",";
-
-        CSV[8][1] = Scan_Config_Info.pixel_coff[0] + ",";
-        CSV[8][2] = Scan_Config_Info.pixel_coff[1] + ",";
-        CSV[8][3] = Scan_Config_Info.pixel_coff[2] + ",";
-        //Device Status Information
-        CSV[13][0] = "Battery Capacity:,";
-        CSV[13][1] = battery + "%,";
-        CSV[14][0] = "Scan TimeStamp:,";
-        CSV[14][1] = Scan_Config_Info.day[1] + "/"+ Scan_Config_Info.day[2] + "/"+ Scan_Config_Info.day[0] + "-" + Scan_Config_Info.day[3] + ":" + Scan_Config_Info.day[4] + ":" + Scan_Config_Info.day[5] + ",";
-        //referense info
-        CSV[13][3] = "System Temp:,";
-        CSV[14][3] = "System Humidity:,";
-        CSV[15][3] = "Lamp Intensity:,";
-        CSV[16][3] = "Sample Points:,";
-        CSV[17][3] = "Scan Resolution:,";
-        CSV[18][3] = "Number of Scans to Average:,";
-        CSV[19][3] = "Scan TimeStamp:,";
-
-        temp = Reference_Info.refsystemp[0];
-        temp = temp/100;
-        CSV[13][4] = temp + "C";
-        humidity =  Reference_Info.refsyshumidity[0]/100;
-        CSV[14][4] = humidity + "%RH";
-        CSV[15][4] = Reference_Info.reflampintensity[0] +"";
-        CSV[16][4] = Reference_Info.numpattren[0] + "pts";
-        index = Reference_Info.width[0];
-        CSV[17][4] = widthnm[index] + "nm";
-        CSV[18][4] = Reference_Info.numrepeat[0] + "";
-        //Scan Configuration
-        CSV[23][0] = "Scan Type:,";
-        CSV[24][0] = "Scan Config Name:,";
-        CSV[25][0] = "Section Scan Type:,";
-        CSV[26][0] = "Spectral Start:,";
-        CSV[27][0] = "Spectral End:,";
-        CSV[28][0] = "Sample Points:,";
-        CSV[29][0] = "Scan Width:,";
-        CSV[30][0] = "Exposure Time:,";
-        CSV[31][0] = "Scan Number to Average:,";
-        CSV[32][0] = "PGA Gain:,";
-
-        CSV[23][1] = scanType + " (0:Col; 1:Had; 2:Slew),";
-        CSV[24][1] = configname ;
         for(int i=0;i<numSections;i++)
         {
             if(Scan_Config_Info.sectionScanType[i] ==0)
-            {
-                CSV[25][i+1] = "Col,";
-            }
+                CSV[3][i+1] = "Column,";
             else
-            {
-                CSV[25][i+1] = "Had,";
-            }
-            CSV[26][i+1] = Scan_Config_Info.sectionWavelengthStartNm[i] + "nm,";
-            CSV[27][i+1] = Scan_Config_Info.sectionWavelengthEndNm[i] + "nm,";
-            CSV[28][i+1] = Scan_Config_Info.sectionNumPatterns[i] + "pts,";
+                CSV[3][i+1] = "Hadamard,";
+            CSV[4][i+1] = Scan_Config_Info.sectionWavelengthStartNm[i] + ",";
+            CSV[5][i+1] = Scan_Config_Info.sectionWavelengthEndNm[i] + ",";
             index = Scan_Config_Info.sectionWidthPx[i];
-            CSV[29][i+1] = widthnm[index] + "nm,";
+            CSV[6][i+1] = widthnm[index] + ",";
             index = Scan_Config_Info.sectionExposureTime[i];
-            CSV[30][i+1] = exposureTime[index] + ",";
+            CSV[7][i+1] = exposureTime[index] + ",";
+            CSV[8][i+1] = Scan_Config_Info.sectionNumPatterns[i] + ",";
         }
-        CSV[31][1] =Scan_Config_Info. sectionNumRepeats[0] + ",";
-        CSV[32][1] = Scan_Config_Info.pga[0] + ",";
+        CSV[9][1] =Scan_Config_Info. sectionNumRepeats[0] + ",";
+        CSV[10][1] = Scan_Config_Info.pga[0] + ",";
+        temp = Scan_Config_Info.systemp[0];
+        temp = temp/100;
+        CSV[11][1] = temp  + ",";
+        humidity =  Scan_Config_Info.syshumidity[0];
+        humidity =  humidity/100;
+        CSV[12][1] = humidity  + ",";
+        CSV[13][1] = battery + ",";
+        CSV[14][1] = Scan_Config_Info.lampintensity[0] + ",";
+        CSV[15][1] = Scan_Config_Info.day[1] + "/"+ Scan_Config_Info.day[2] + "/"+ Scan_Config_Info.day[0] + "-" + Scan_Config_Info.day[3] + ":" + Scan_Config_Info.day[4] + ":" + Scan_Config_Info.day[5] + ",";
+        //General Information
+        CSV[17][0] = "***General Information***,";
+        CSV[18][0] = "Model Name:,";
+        CSV[19][0] = "Serial Number:,";
+        CSV[20][0] = "GUI Version:,";
+        CSV[21][0] = "TIVA Version:,";
+        //CSV[22][0] = "DLPC Version:,";
+        CSV[22][0] = "UUID:,";
+        CSV[23][0] = "Main Board Version:,";
+        CSV[24][0] = "Detector Board Version:,";
+
+        CSV[18][1] = model_name + ",";
+        CSV[19][1] = serial_num + ",";
+        String version = "";
+        int versionCode = 0;
+        try {
+            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            version = pInfo.versionName;
+            versionCode = pInfo.versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+        }
+        CSV[20][1] = version + "." + Integer.toString(versionCode);
+        CSV[21][1] = Tivarev + ",";
+        CSV[22][1] = uuid + ",";
+        String split_hw[] = HWrev.split("\\.");
+        CSV[23][1] = split_hw[0] + ",";
+        CSV[24][1] = split_hw[2] + ",";
+
+        //Reference Scan Information
+        CSV[0][7] = "***Reference Scan Information***,";
+        CSV[1][7] = "Pattern Width (nm):,";
+        CSV[2][7] = "Digital Resolution:,";
+        CSV[3][7] = "Num Repeats:,";
+        CSV[4][7] = "System Temp (C):,";
+        CSV[5][7] = "Humidity (%):,";
+        /*if(isExtendVer)
+            CSV[6][7] = "Lamp ADC(VM1/VM2/CM1/CM2):,";
+        else
+            CSV[6][7] = "Lamp Intensity:,";*/
+        CSV[6][7] = "Lamp Intensity:,";
+        CSV[7][7] = "Data Date-Time:,";
+        index = Reference_Info.width[0];
+        CSV[1][8] = widthnm[index] + ",";
+        CSV[2][8] = Integer.toString( Reference_Info.numpattren[0]) + ",";
+        CSV[3][8] = Reference_Info.numrepeat[0] + ",";
+        temp = Reference_Info.refsystemp[0];
+        temp = temp/100;
+        CSV[4][8] = Double.toString(temp) + ",";
+        humidity =  Reference_Info.refsyshumidity[0]/100;
+        CSV[5][8] = Double.toString(humidity) ;
+        CSV[6][8] = Reference_Info.reflampintensity[0] +",";
+
+        //Calibration Coefficients
+        CSV[17][7] = "***Calibration Coefficients***,";
+        CSV[18][7] = "Shift Vector Coefficients:,";
+        CSV[19][7] = "Pixel to Wavelength Coefficients:,";
+
+        CSV[18][8] = Scan_Config_Info.shift_vector_coff[0] + ",";
+        CSV[18][9] = Scan_Config_Info.shift_vector_coff[1] + ",";
+        CSV[18][10] = Scan_Config_Info.shift_vector_coff[2] + ",";
+
+        CSV[19][8] = Scan_Config_Info.pixel_coff[0] + ",";
+        CSV[19][9] = Scan_Config_Info.pixel_coff[1] + ",";
+        CSV[19][10] = Scan_Config_Info.pixel_coff[2] + ",";
+
+
+        CSV[27][0] = "***Scan Data***,";
         CSVWriter writer;
         try {
             writer = new CSVWriter(new FileWriter(csvOS), ',', CSVWriter.NO_QUOTE_CHARACTER);
             List<String[]> data = new ArrayList<String[]>();
 
             String buf = "";
-            for (int i = 0; i < 34; i++)
+            for (int i = 0; i < 28; i++)
             {
                 for (int j = 0; j < 15; j++)
                 {
@@ -2364,7 +2391,7 @@ public class ScanViewActivity extends Activity {
                 }
                 buf = "";
             }
-            data.add(new String[]{"Wavelength,Intensity,Absorbance,Reflectance"});
+            data.add(new String[]{"Wavelength (nm),Sample Signal (unitless),Absorbance (AU),Reflectance"});
             int csvIndex;
             for (csvIndex = 0; csvIndex < scanResults.getLength(); csvIndex++) {
                 double waves = scanResults.getWavelength()[csvIndex];
