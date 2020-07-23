@@ -99,7 +99,7 @@ public class DeviceStatusViewActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(DisconnReceiver, disconnFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(BackgroundReciver, new IntentFilter(NOTIFY_BACKGROUND));
     }
-    private String GetLampTimeString(long lamptime)
+    public static String GetLampTimeString(long lamptime)
     {
         String lampusage = "";
         if (lamptime / 86400 != 0)

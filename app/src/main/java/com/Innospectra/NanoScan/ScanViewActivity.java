@@ -22,7 +22,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.MediaScannerConnection;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -31,7 +30,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -75,19 +73,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.ISCSDK.ISCNIRScanSDK.GetMaxPatternJNI;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_intensity;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_length;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_uncalibratedIntensity;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_wavelength;
 import static com.ISCSDK.ISCNIRScanSDK.Reference_Info;
 import static com.ISCSDK.ISCNIRScanSDK.Scan_Config_Info;
-import static com.ISCSDK.ISCNIRScanSDK.WriteScanConfiguration;
 import static com.ISCSDK.ISCNIRScanSDK.getBooleanPref;
 import static com.ISCSDK.ISCNIRScanSDK.getStringPref;
 import static com.ISCSDK.ISCNIRScanSDK.storeBooleanPref;
 import static com.ISCSDK.ISCNIRScanSDK.storeStringPref;
+import static com.Innospectra.NanoScan.DeviceStatusViewActivity.GetLampTimeString;
 
 
 /**
@@ -136,7 +132,9 @@ public class ScanViewActivity extends Activity {
         LEVEL_0, // Tiva < 2.1.0.67
         LEVEL_1, // Tiva >=2.1.0.67
         LEVEL_2, // Tiva >=2.4.X
+        LEVEL_3, // Tiva >=2.4.3 and main board = "F"
         LEVEL_EXT_1, // Tiva >= 3.3.0
+        LEVEL_EXT_2, // Tiva >= 3.3.0 and  main board = "0"
     }
     public enum ScanMethod {
         Normal, QuickSet, Manual,Maintain
@@ -163,11 +161,14 @@ public class ScanViewActivity extends Activity {
     private final BroadcastReceiver ReturnCurrentScanConfigurationDataReceiver = new ReturnCurrentScanConfigurationDataReceiver();
     private final BroadcastReceiver DeviceInfoReceiver = new DeviceInfoReceiver();
     private final BroadcastReceiver GetUUIDReceiver = new GetUUIDReceiver();
-    private final BroadcastReceiver GetBatteryReceiver = new GetBatteryReceiver();
+    private final BroadcastReceiver GetDeviceStatusReceiver = new GetDeviceStatusReceiver();
     private final BroadcastReceiver ScanConfReceiver = new ScanConfReceiver();
     private final BroadcastReceiver WriteScanConfigStatusReceiver = new WriteScanConfigStatusReceiver();
     private final BroadcastReceiver ScanConfSizeReceiver=  new ScanConfSizeReceiver();
     private final BroadcastReceiver GetActiveScanConfReceiver = new GetActiveScanConfReceiver();
+    private final BroadcastReceiver ReturnLampRampUpADCReceiver = new ReturnLampRampUpADCReceiver();
+    private final BroadcastReceiver ReturnLampADCAverageReceiver = new ReturnLampADCAverageReceiver();
+    private final BroadcastReceiver ReturnMFGNumReceiver = new ReturnMFGNumReceiver();
     private final BroadcastReceiver BackgroundReciver = new BackGroundReciver();
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(ISCNIRScanSDK.SCAN_DATA);
@@ -183,6 +184,9 @@ public class ScanViewActivity extends Activity {
     private final IntentFilter RetrunActivateStatusFilter = new IntentFilter(ISCNIRScanSDK.ACTION_RETURN_ACTIVATE);
     private final IntentFilter  ReturnCurrentScanConfigurationDataFilter = new IntentFilter(ISCNIRScanSDK.RETURN_CURRENT_CONFIG_DATA);
     private final IntentFilter WriteScanConfigStatusFilter = new IntentFilter(ISCNIRScanSDK.ACTION_RETURN_WRITE_SCAN_CONFIG_STATUS);
+    private final IntentFilter ReturnLampRampUpFilter = new IntentFilter(ISCNIRScanSDK.ACTION_RETURN_LAMP_RAMPUP_ADC);
+    private final IntentFilter ReturnLampADCAverageFilter = new IntentFilter(ISCNIRScanSDK.ACTION_RETURN_LAMP_AVERAGE_ADC);
+    private final IntentFilter ReturnMFGNumFilter = new IntentFilter(ISCNIRScanSDK.ACTION_RETURN_MFGNUM);
     public static final String NOTIFY_BACKGROUND = "com.Innospectra.NanoScan.ScanViewActivity.notifybackground";
     private String  NOTIFY_ISEXTVER = "com.Innospectra.NanoScan.ISEXTVER";
     //endregion
@@ -364,7 +368,10 @@ public class ScanViewActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(DeviceInfoReceiver, new IntentFilter(ISCNIRScanSDK.ACTION_INFO));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(GetUUIDReceiver, new IntentFilter(ISCNIRScanSDK.SEND_DEVICE_UUID));
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(GetBatteryReceiver, new IntentFilter(ISCNIRScanSDK.SEND_BATTERY));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(GetDeviceStatusReceiver, new IntentFilter(ISCNIRScanSDK.ACTION_STATUS));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnLampRampUpADCReceiver, ReturnLampRampUpFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnLampADCAverageReceiver, ReturnLampADCAverageFilter);
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnMFGNumReceiver, ReturnMFGNumFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(BackgroundReciver, new IntentFilter(NOTIFY_BACKGROUND));
         //endregion
     }
@@ -719,11 +726,24 @@ public class ScanViewActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             SpectrumCalCoefficients = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_SPEC_COEF_DATA);
             passSpectrumCalCoefficients = SpectrumCalCoefficients;
+            //Request device MFG num
+            ISCNIRScanSDK.GetMFGNumber();
+        }
+    }
+    /**
+     *Get MFG Num (ISCNIRScanSDK.GetMFGNumber() should be called)
+     */
+    private byte MFG_NUM[];
+    public class ReturnMFGNumReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            MFG_NUM = intent.getByteArrayExtra(ISCNIRScanSDK.MFGNUM_DATA);
             //Request device information
             ISCNIRScanSDK.GetDeviceInfo();
         }
     }
     String model_name="";
+    String model_num = "";
     String serial_num = "";
     String HWrev = "";
     String Tivarev ="";
@@ -762,10 +782,18 @@ public class ScanViewActivity extends Activity {
     private void GetFWLevel(String Tivarev)
     {
         String[] TivaArray= Tivarev.split(Pattern.quote("."));
+        String split_hw[] = HWrev.split("\\.");
         fw_level = FW_LEVEL.LEVEL_0;
         if(isExtendVer)
         {
-            if(Integer.parseInt(TivaArray[1])>=3)
+           if(Integer.parseInt(TivaArray[1])>=3 && split_hw[0].equals("O"))
+           {
+                 /*New Applications:
+                  1. Support read ADC value
+                 */
+                fw_level = FW_LEVEL.LEVEL_EXT_2;//>=3.3.0 and main board = "O"
+           }
+            else if(Integer.parseInt(TivaArray[1])>=3)
             {
                 /*New Applications:
                   1. Add Lock Button
@@ -777,20 +805,27 @@ public class ScanViewActivity extends Activity {
         }
         else
         {
-            if(Integer.parseInt(TivaArray[1])>=4)
+            if(Integer.parseInt(TivaArray[1])>=4 && Integer.parseInt(TivaArray[2])>=3 &&split_hw[0].equals("F"))
+            {
+                /*New Applications:
+                  1. Support read ADC value
+                 */
+                fw_level = FW_LEVEL.LEVEL_3;//>=2.4.3 and main board ="F"
+            }
+            else if(Integer.parseInt(TivaArray[1])>=4 && Integer.parseInt(TivaArray[2])>=4)
             {
                 /*New Applications:
                   1. Add Lock Button
                  */
                 fw_level = FW_LEVEL.LEVEL_2;//>=2.4.X
             }
-            else if((TivaArray.length==3 && Integer.parseInt(TivaArray[1])>=1)|| (TivaArray.length==4 &&  Integer.parseInt(TivaArray[3])>=67))//>=2.1.0.67
+            /*else if((TivaArray.length==3 && Integer.parseInt(TivaArray[1])>=1)|| (TivaArray.length==4 &&  Integer.parseInt(TivaArray[3])>=67))//>=2.1.0.67
             {
-                 /*New Applications:
-                  1. Support activate state
-                 */
+                 //New Applications:
+                 // 1. Support activate state
+
                 fw_level = FW_LEVEL.LEVEL_1;
-            }
+            }*/
             else
             {
                 fw_level = FW_LEVEL.LEVEL_0;
@@ -850,11 +885,11 @@ public class ScanViewActivity extends Activity {
             }
             else
             {
-                NotValidValueDialog("Firmware Out of Date","You must update the firmware on your NIRScan Nano to make this App working correctly!\n" +
-                        "FW required version at least V2.1.0.67.\nDetected version is V" + Tivarev +".");
-                closeFunction();
+                Dialog_Pane_Finish("Firmware Out of Date","You must update the firmware on your NIRScan Nano to make this App working correctly!\n" +
+                        "FW required version at least V2.4.4.\nDetected version is V" + Tivarev +".");
+                /*closeFunction();
                 mMenu.findItem(R.id.action_settings).setEnabled(true);
-                mMenu.findItem(R.id.action_key).setVisible(false);
+                mMenu.findItem(R.id.action_key).setVisible(false);*/
             }
         }
     }
@@ -1030,6 +1065,7 @@ public class ScanViewActivity extends Activity {
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ScanConfSizeReceiver);
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(GetActiveScanConfReceiver);
             LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(GetDeviceStatusReceiver);
 
             Intent configureIntent = new Intent(mContext, ConfigureViewActivity.class);
             startActivity(configureIntent);
@@ -1968,11 +2004,14 @@ public class ScanViewActivity extends Activity {
     boolean continuous = false;
     ISCNIRScanSDK.ReferenceCalibration reference_calibration;
     String CurrentTime;
+    long MesureScanTime=0;
     /**
      * Custom receiver for handling scan data and setting up the graphs properly(ISCNIRScanSDK.StartScan() should be called)
      */
     public class ScanDataReadyReceiver extends BroadcastReceiver {
         public void onReceive(Context context, Intent intent) {
+            long endtime = System.currentTimeMillis();
+            MesureScanTime = endtime - ISCNIRScanSDK.startScanTime;
             reference_calibration = ISCNIRScanSDK.ReferenceCalibration.currentCalibration.get(0);
             if(Interpret_length<=0)
             {
@@ -2062,7 +2101,7 @@ public class ScanViewActivity extends Activity {
                     }
                 }
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
-                SimpleDateFormat filesimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault());
+                SimpleDateFormat filesimpleDateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault());
                 String ts = simpleDateFormat.format(new Date());
                 CurrentTime = filesimpleDateFormat.format(new Date());
                 ActionBar ab = getActionBar();
@@ -2083,19 +2122,51 @@ public class ScanViewActivity extends Activity {
                     continuous = toggle_btn_quickset_continuous_scan_mode.isChecked();
                 }
                 storeStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.prefix, filePrefix.getText().toString());
-                //Get the battery power
-                ISCNIRScanSDK.GetBatteryPower();
+                //Get Device information from the device
+                ISCNIRScanSDK.GetDeviceStatus();
             }
         }
     }
     /**
-     * Send broadcast  GET_BATTERY will  through GetBatteryReceiver  to get  the battery power(ISCNIRScanSDK.GetBatteryPower()should be called)
+     * GetDeviceStatusReceiver to get  the device status(ISCNIRScanSDK.GetDeviceStatus()should be called)
      */
     String battery="";
-    public class GetBatteryReceiver extends BroadcastReceiver {
+    String TotalLampTime;
+    byte[] devbyte;
+    byte[] errbyte;
+    public class GetDeviceStatusReceiver extends BroadcastReceiver {
 
         public void onReceive(Context context, Intent intent) {
-            battery = Integer.toString(intent.getIntExtra(ISCNIRScanSDK.EXTRA_BATTERY,0));
+            battery = Integer.toString( intent.getIntExtra(ISCNIRScanSDK.EXTRA_BATT, 0));
+            long lamptime = intent.getLongExtra(ISCNIRScanSDK.EXTRA_LAMPTIME,0);
+            TotalLampTime = GetLampTimeString(lamptime);
+            devbyte = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_DEV_STATUS_BYTE);
+            errbyte = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_ERR_BYTE);
+            if((isExtendVer && fw_level.compareTo(FW_LEVEL.LEVEL_EXT_2)>=0) || (!isExtendVer &&  fw_level.compareTo(FW_LEVEL.LEVEL_3)>=0))
+                ISCNIRScanSDK.GetScanLampRampUpADC();
+            else
+                DoScanComplete();
+        }
+    }
+    /**
+     *Get lamp ramp up adc data (ISCNIRScanSDK.GetScanLampRampUpADC() should be called)
+     */
+    private byte Lamp_RAMPUP_ADC_DATA[];
+    public class ReturnLampRampUpADCReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            Lamp_RAMPUP_ADC_DATA = intent.getByteArrayExtra(ISCNIRScanSDK.LAMP_RAMPUP_DATA);
+            ISCNIRScanSDK.GetLampADCAverage();
+        }
+    }
+    /**
+     *Get lamp average adc data (ISCNIRScanSDK.GetLampADCAverage() should be called)
+     */
+    private byte Lamp_AVERAGE_ADC_DATA[];
+    public class ReturnLampADCAverageReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            Lamp_AVERAGE_ADC_DATA = intent.getByteArrayExtra(ISCNIRScanSDK.LAMP_ADC_AVERAGE_DATA);
             DoScanComplete();
         }
     }
@@ -2216,13 +2287,14 @@ public class ScanViewActivity extends Activity {
         {
             configname = "Reference";
             Date datetime = new Date();
-            SimpleDateFormat format = new SimpleDateFormat("MM/dd/yy-HH:mm:ss");
-            newdate = format.format(datetime);
-            CSV[7][8] = newdate;
+            SimpleDateFormat format_1 = new SimpleDateFormat("yy/mm/dd");
+            SimpleDateFormat format_2 = new SimpleDateFormat("HH:mm:ss");
+            newdate = format_1.format(datetime) + "T" + format_2.format(datetime);
+            CSV[14][8] = newdate;
         }
         else
         {
-            CSV[7][8] = Reference_Info.refday[1] + "/"+ Reference_Info.refday[2] + "/"+ Reference_Info.refday[0] + "-" + Reference_Info.refday[3] + ":" + Reference_Info.refday[4] + ":" + Reference_Info.refday[5];
+            CSV[14][8] =  Reference_Info.refday[0]  + "/" +Reference_Info.refday[1] + "/"+ Reference_Info.refday[2] + "T" + Reference_Info.refday[3] + ":" + Reference_Info.refday[4] + ":" + Reference_Info.refday[5];
         }
         String prefix = filePrefix.getText().toString();
         if (prefix.equals("")) {
@@ -2268,13 +2340,12 @@ public class ScanViewActivity extends Activity {
         CSV[11][0] = "System Temp (C):,";
         CSV[12][0] = "Humidity (%):,";
         CSV[13][0] = "Battery Capacity (%):,";
-        /*if(isExtendVer)
-            CSV[14][0] = "Lamp ADC(VM1/VM2/CM1/CM2):,";
+        if((isExtendVer && fw_level.compareTo(FW_LEVEL.LEVEL_EXT_2)>=0) || (!isExtendVer &&  fw_level.compareTo(FW_LEVEL.LEVEL_3)>=0))
+            CSV[14][0] = "Lamp ADC:,";
         else
-            CSV[14][0] = "Lamp Intensity:,";*/
-        CSV[14][0] = "Lamp Intensity:,";
+            CSV[14][0] = "Lamp Intensity:,";
         CSV[15][0] = "Data Date-Time:,";
-        //CSV[16][0] = "Total Measurement Time in sec:,"
+        CSV[16][0] = "Total Measurement Time in sec:,";
 
         CSV[1][1] = configname  + ",";
         CSV[2][1] = "Slew,";
@@ -2305,12 +2376,13 @@ public class ScanViewActivity extends Activity {
         CSV[12][1] = humidity  + ",";
         CSV[13][1] = battery + ",";
         CSV[14][1] = Scan_Config_Info.lampintensity[0] + ",";
-        CSV[15][1] = Scan_Config_Info.day[1] + "/"+ Scan_Config_Info.day[2] + "/"+ Scan_Config_Info.day[0] + "-" + Scan_Config_Info.day[3] + ":" + Scan_Config_Info.day[4] + ":" + Scan_Config_Info.day[5] + ",";
+        CSV[15][1] = Scan_Config_Info.day[0] + "/" + Scan_Config_Info.day[1] + "/"+ Scan_Config_Info.day[2]  + "T" + Scan_Config_Info.day[3] + ":" + Scan_Config_Info.day[4] + ":" + Scan_Config_Info.day[5] + ",";
+        CSV[16][1] = Double.toString((double) MesureScanTime/1000);
         //General Information
         CSV[17][0] = "***General Information***,";
         CSV[18][0] = "Model Name:,";
         CSV[19][0] = "Serial Number:,";
-        CSV[20][0] = "GUI Version:,";
+        CSV[20][0] = "APP Version:,";
         CSV[21][0] = "TIVA Version:,";
         //CSV[22][0] = "DLPC Version:,";
         CSV[22][0] = "UUID:,";
@@ -2319,6 +2391,18 @@ public class ScanViewActivity extends Activity {
 
         CSV[18][1] = model_name + ",";
         CSV[19][1] = serial_num + ",";
+        String mfg_num = "";
+        try {
+             mfg_num  = new String(MFG_NUM, "ISO-8859-1");
+            if (!mfg_num.contains("70UB1") && !mfg_num.contains("95UB1"))
+                mfg_num = "";
+            else if(mfg_num.contains("95UB1"))
+                mfg_num = mfg_num.substring(0,mfg_num.length()-2);
+        }catch (Exception e)
+        {
+            mfg_num = "";
+        };
+        CSV[19][2] = mfg_num + ",";
         String version = "";
         int versionCode = 0;
         try {
@@ -2336,32 +2420,56 @@ public class ScanViewActivity extends Activity {
 
         //Reference Scan Information
         CSV[0][7] = "***Reference Scan Information***,";
-        CSV[1][7] = "Pattern Width (nm):,";
-        CSV[2][7] = "Digital Resolution:,";
-        CSV[3][7] = "Num Repeats:,";
-        CSV[4][7] = "System Temp (C):,";
-        CSV[5][7] = "Humidity (%):,";
-        /*if(isExtendVer)
-            CSV[6][7] = "Lamp ADC(VM1/VM2/CM1/CM2):,";
+        CSV[1][7] = "Scan Config Name:,";
+        CSV[2][7] = "Scan Config Type:,";
+        CSV[3][7] = "Section Config Type:,";
+        CSV[4][7] = "Start Wavelength (nm):,";
+        CSV[5][7] = "End Wavelength (nm):,";
+        CSV[6][7] = "Pattern Width (nm):,";
+        CSV[7][7] = "Exposure (ms):,";
+        CSV[8][7] = "Digital Resolution:,";
+        CSV[9][7] = "Num Repeats:,";
+        CSV[10][7] = "PGA Gain:,";
+        CSV[11][7] = "System Temp (C):,";
+        CSV[12][7] = "Humidity (%):,";
+        CSV[13][7] = "Lamp Intensity:,";
+        CSV[14][7] = "Data Date-Time:,";
+        if(getBytetoString(Reference_Info.refconfigName).equals("SystemTest"))
+            CSV[1][8] = "Built-in Factory Reference";
         else
-            CSV[6][7] = "Lamp Intensity:,";*/
-        CSV[6][7] = "Lamp Intensity:,";
-        CSV[7][7] = "Data Date-Time:,";
+            CSV[1][8] = "Built-in User Reference";
+        CSV[2][8] = "Slew,";
+        CSV[2][9] = "Num Section:,";
+        CSV[2][10] = "1,";
+        if(Reference_Info.refconfigtype[0] == 0)
+            CSV[3][8] = "Column,";
+        else
+            CSV[3][8] = "Hadamard,";
+        CSV[4][8] = Double.toString(Reference_Info.refstartwav[0]);
+        CSV[5][8] = Double.toString(Reference_Info.refendwav[0]);
         index = Reference_Info.width[0];
-        CSV[1][8] = widthnm[index] + ",";
-        CSV[2][8] = Integer.toString( Reference_Info.numpattren[0]) + ",";
-        CSV[3][8] = Reference_Info.numrepeat[0] + ",";
+        CSV[6][8] = widthnm[index] + ",";
+        index = Reference_Info.refexposuretime[0];
+        CSV[7][8] = exposureTime[index] + ",";
+        CSV[8][8] = Integer.toString( Reference_Info.numpattren[0]) + ",";
+        CSV[9][8] = Reference_Info.numrepeat[0] + ",";
+        CSV[10][8] = Integer.toString(Reference_Info.refpga[0]);
         temp = Reference_Info.refsystemp[0];
         temp = temp/100;
-        CSV[4][8] = Double.toString(temp) + ",";
+        CSV[11][8] = Double.toString(temp) + ",";
         humidity =  Reference_Info.refsyshumidity[0]/100;
-        CSV[5][8] = Double.toString(humidity) ;
-        CSV[6][8] = Reference_Info.reflampintensity[0] +",";
+        CSV[12][8] = Double.toString(humidity) ;
+        CSV[13][8] = Reference_Info.reflampintensity[0] +",";
 
         //Calibration Coefficients
         CSV[17][7] = "***Calibration Coefficients***,";
         CSV[18][7] = "Shift Vector Coefficients:,";
         CSV[19][7] = "Pixel to Wavelength Coefficients:,";
+        CSV[21][7] = "***Lamp Usage * **,";
+        CSV[22][7] ="Total Time(HH:MM:SS):,";
+        CSV[23][7] ="***Device/Error Status***,";
+        CSV[24][7] ="Device Status:,";
+        CSV[25][7] ="Error status:,";
 
         CSV[18][8] = Scan_Config_Info.shift_vector_coff[0] + ",";
         CSV[18][9] = Scan_Config_Info.shift_vector_coff[1] + ",";
@@ -2370,8 +2478,24 @@ public class ScanViewActivity extends Activity {
         CSV[19][8] = Scan_Config_Info.pixel_coff[0] + ",";
         CSV[19][9] = Scan_Config_Info.pixel_coff[1] + ",";
         CSV[19][10] = Scan_Config_Info.pixel_coff[2] + ",";
+        CSV[22][8] = TotalLampTime + ",";
+        final StringBuilder stringBuilder = new StringBuilder(8);
+        for(int i= 3;i>= 0;i--)
+            stringBuilder.append(String.format("%02X", devbyte[i]));
+        CSV[24][8] ="0x" + stringBuilder.toString();
+        final StringBuilder stringBuilder_errorstatus = new StringBuilder(8);
+        for(int i= 3;i>= 0;i--)
+            stringBuilder_errorstatus.append(String.format("%02X", errbyte[i]));
+        CSV[25][8] ="0x" + stringBuilder_errorstatus.toString() + ",";
+        final StringBuilder stringBuilder_errorcode = new StringBuilder(8);
+        for(int i= 4;i<20;i+=2)
+        {
+            stringBuilder_errorcode.append(String.format("%02X", errbyte[i+1]));
+            stringBuilder_errorcode.append(String.format("%02X", errbyte[i]));
+        }
 
-
+        CSV[25][9] = "Error Code:,";
+        CSV[25][10] ="0x" + stringBuilder_errorcode.toString() + ",";
         CSV[27][0] = "***Scan Data***,";
         CSVWriter writer;
         try {
@@ -2391,16 +2515,71 @@ public class ScanViewActivity extends Activity {
                 }
                 buf = "";
             }
-            data.add(new String[]{"Wavelength (nm),Sample Signal (unitless),Absorbance (AU),Reflectance"});
+            data.add(new String[]{"Wavelength (nm),Absorbance (AU),Reference Signal (unitless),Sample Signal (unitless)"});
             int csvIndex;
             for (csvIndex = 0; csvIndex < scanResults.getLength(); csvIndex++) {
                 double waves = scanResults.getWavelength()[csvIndex];
                 int intens = scanResults.getUncalibratedIntensity()[csvIndex];
                 float absorb = (-1) * (float) Math.log10((double) scanResults.getUncalibratedIntensity()[csvIndex] / (double) scanResults.getIntensity()[csvIndex]);
-                float reflect = (float) Scan_Spectrum_Data.getUncalibratedIntensity()[csvIndex] / Scan_Spectrum_Data.getIntensity()[csvIndex];
-                data.add(new String[]{String.valueOf(waves), String.valueOf(intens), String.valueOf(absorb), String.valueOf(reflect)});
+                //float reflect = (float) Scan_Spectrum_Data.getUncalibratedIntensity()[csvIndex] / Scan_Spectrum_Data.getIntensity()[csvIndex];
+                float reference = (float) Scan_Spectrum_Data.getIntensity()[csvIndex];
+                data.add(new String[]{String.valueOf(waves), String.valueOf(absorb),String.valueOf(reference), String.valueOf(intens)});
             }
+            if((isExtendVer && fw_level.compareTo(FW_LEVEL.LEVEL_EXT_2)>=0) || (!isExtendVer &&  fw_level.compareTo(FW_LEVEL.LEVEL_3)>=0))
+            {
+                data.add(new String[]{""});
+                data.add(new String[]{"***Lamp Ramp Up ADC***,"});
+                data.add(new String[]{"ADC0,ADC1,ADC2,ADC3"});
+                String[] ADC = new String[4];
+                int count = 0;
+                for(int i=0;i<Lamp_RAMPUP_ADC_DATA.length;i+=2)
+                {
+                    int adc_value = (Lamp_RAMPUP_ADC_DATA[i+1]&0xff)<<8|Lamp_RAMPUP_ADC_DATA[i]&0xff;
+                    if(adc_value ==0 && i%8==0 && i/8>0)
+                        break;
+                    ADC[count] = Integer.toString(adc_value) ;
+                    count ++;
+                    if(count ==4)
+                    {
+                        data.add(ADC);
+                        count = 0;
+                        ADC = new String[4];
+                    }
+                }
+                //-----------------------------------
+                data.add(new String[]{""});
+                data.add(new String[]{"***Lamp ADC among repeated times***,"});
+                data.add(new String[]{"ADC0,ADC1,ADC2,ADC3"});
+                ADC = new String[4];
+                int Average_ADC[] = new int[4];
+                int cal_count =0;
+                count = 0;
+                for(int i=0;i<Lamp_AVERAGE_ADC_DATA.length;i+=2)
+                {
+                    int adc_value = (Lamp_AVERAGE_ADC_DATA[i+1]&0xff)<<8|Lamp_AVERAGE_ADC_DATA[i]&0xff;
+                    if(adc_value ==0 && i%8==0 && i/8>0)
+                        break;
+                    ADC[count] =Integer.toString(adc_value) ;
+                    Average_ADC[count] +=adc_value;
+                    count ++;
+                    if(count ==4)
+                    {
+                        data.add(ADC);
+                        cal_count ++;
+                        count = 0;
+                        ADC = new String[4];
+                    }
+                }
+                String AverageADC = "Lamp ADC:,";
 
+                for(int i=0;i<4;i++)
+                {
+                    double buf_adc = (double)Average_ADC[i];
+                    AverageADC +=Math.round( buf_adc/cal_count) + ",";
+                }
+                AverageADC +=",," + CSV[14][7] + CSV[14][8];// add ref data-time data
+                data.get(14)[0] = AverageADC;
+            }
             writer.writeAll(data);
             writer.close();
         } catch (IOException e) {
@@ -3135,7 +3314,7 @@ public class ScanViewActivity extends Activity {
         }
         return rawData ;
     }
-    public String getBytetoString(byte configName[]) {
+    public static String getBytetoString(byte configName[]) {
         byte[] byteChars = new byte[40];
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         byte[] var3 = byteChars;
@@ -3397,6 +3576,7 @@ public class ScanViewActivity extends Activity {
             LocalBroadcastManager.getInstance(mContext).registerReceiver(ScanConfSizeReceiver, new IntentFilter(ISCNIRScanSDK.SCAN_CONF_SIZE));
             LocalBroadcastManager.getInstance(mContext).registerReceiver(GetActiveScanConfReceiver, new IntentFilter(ISCNIRScanSDK.SEND_ACTIVE_CONF));
             LocalBroadcastManager.getInstance(mContext).registerReceiver(WriteScanConfigStatusReceiver, WriteScanConfigStatusFilter);
+            LocalBroadcastManager.getInstance(mContext).registerReceiver(GetDeviceStatusReceiver,new IntentFilter(ISCNIRScanSDK.ACTION_STATUS));
 
         }
         //-----------------------------------------------------------------------------------------------------------
@@ -3445,8 +3625,10 @@ public class ScanViewActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(WriteScanConfigStatusReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(DeviceInfoReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(GetUUIDReceiver);
-        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(GetBatteryReceiver);
-
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(GetDeviceStatusReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnLampRampUpADCReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnLampADCAverageReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnMFGNumReceiver);
         mHandler.removeCallbacksAndMessages(null);
         storeBooleanPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.continuousScan, toggle_btn_continuous_scan.isChecked());
     }
