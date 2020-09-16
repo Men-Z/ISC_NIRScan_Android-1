@@ -77,6 +77,7 @@ import static com.ISCSDK.ISCNIRScanSDK.Interpret_intensity;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_length;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_uncalibratedIntensity;
 import static com.ISCSDK.ISCNIRScanSDK.Interpret_wavelength;
+import static com.ISCSDK.ISCNIRScanSDK.LAMP_ON_OFF;
 import static com.ISCSDK.ISCNIRScanSDK.Reference_Info;
 import static com.ISCSDK.ISCNIRScanSDK.Scan_Config_Info;
 import static com.ISCSDK.ISCNIRScanSDK.getBooleanPref;
@@ -110,6 +111,7 @@ public class ScanViewActivity extends Activity {
     private static Context mContext;
     private ProgressDialog barProgressDialog;
     private ProgressBar calProgress;
+    private TextView progressBarinsideText;
     private AlertDialog alertDialog;
     private Menu mMenu;
 
@@ -131,7 +133,7 @@ public class ScanViewActivity extends Activity {
     {
         LEVEL_0, // Tiva < 2.1.0.67
         LEVEL_1, // Tiva >=2.1.0.67
-        LEVEL_2, // Tiva >=2.4.X
+        LEVEL_2, // Tiva >=2.4.3
         LEVEL_3, // Tiva >=2.4.3 and main board = "F"
         LEVEL_EXT_1, // Tiva >= 3.3.0
         LEVEL_EXT_2, // Tiva >= 3.3.0 and  main board = "0"
@@ -169,6 +171,9 @@ public class ScanViewActivity extends Activity {
     private final BroadcastReceiver ReturnLampRampUpADCReceiver = new ReturnLampRampUpADCReceiver();
     private final BroadcastReceiver ReturnLampADCAverageReceiver = new ReturnLampADCAverageReceiver();
     private final BroadcastReceiver ReturnMFGNumReceiver = new ReturnMFGNumReceiver();
+    private final BroadcastReceiver RetrunSetLampReceiver = new RetrunSetLampReceiver();
+    private final BroadcastReceiver RetrunSetPGAReceiver = new RetrunSetPGAReceiver();
+    private final BroadcastReceiver RetrunSetScanRepeatsReceiver = new RetrunSetScanRepeatsReceiver();
     private final BroadcastReceiver BackgroundReciver = new BackGroundReciver();
 
     private final IntentFilter scanDataReadyFilter = new IntentFilter(ISCNIRScanSDK.SCAN_DATA);
@@ -314,6 +319,7 @@ public class ScanViewActivity extends Activity {
     public static boolean GotoScanConfigFlag = false;
     //On pause event trigger is go to other page or not
     private static Boolean GotoOtherPage = false;
+    public  static Boolean isOldTiva = false;
     //endregion
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -322,16 +328,17 @@ public class ScanViewActivity extends Activity {
         mContext = this;
         DEVICE_NAME = ISCNIRScanSDK.getStringPref(mContext,ISCNIRScanSDK.SharedPreferencesKeys.DeviceFilter,"NIR");
         Bundle bundle = getIntent().getExtras();
-        mainflag = bundle.getString("main" );
+        mainflag = bundle. getString("main" );
         storeBooleanPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.LockButton,true);
         findViewById(R.id.layout_manual).setVisibility(View.GONE);
         findViewById(R.id.layout_quickset).setVisibility(View.GONE);
         findViewById(R.id.layout_maintain).setVisibility(View.GONE);
-        Disable_Stop_Continous_button();
 
         calProgress = (ProgressBar) findViewById(R.id.calProgress);
         calProgress.setVisibility(View.VISIBLE);
+        progressBarinsideText = (TextView)findViewById(R.id.progressBarinsideText);
         connected = false;
+        Disable_Stop_Continous_button();
 
         filePrefix = (EditText) findViewById(R.id.et_prefix);
         btn_scan = (Button) findViewById(R.id.btn_scan);
@@ -360,19 +367,19 @@ public class ScanViewActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).registerReceiver(DisconnReceiver, disconnFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ScanConfReceiver, scanConfFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ScanStartedReceiver, scanStartedFilter);
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(ScanConfSizeReceiver, new IntentFilter(ISCNIRScanSDK.SCAN_CONF_SIZE));
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(GetActiveScanConfReceiver, new IntentFilter(ISCNIRScanSDK.SEND_ACTIVE_CONF));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(SpectrumCalCoefficientsReadyReceiver, SpectrumCalCoefficientsReadyFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunReadActivateStatusReceiver, RetrunReadActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunActivateStatusReceiver, RetrunActivateStatusFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnCurrentScanConfigurationDataReceiver, ReturnCurrentScanConfigurationDataFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(DeviceInfoReceiver, new IntentFilter(ISCNIRScanSDK.ACTION_INFO));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(GetUUIDReceiver, new IntentFilter(ISCNIRScanSDK.SEND_DEVICE_UUID));
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(GetDeviceStatusReceiver, new IntentFilter(ISCNIRScanSDK.ACTION_STATUS));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnLampRampUpADCReceiver, ReturnLampRampUpFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnLampADCAverageReceiver, ReturnLampADCAverageFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(ReturnMFGNumReceiver, ReturnMFGNumFilter);
         LocalBroadcastManager.getInstance(mContext).registerReceiver(BackgroundReciver, new IntentFilter(NOTIFY_BACKGROUND));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunSetLampReceiver, new IntentFilter(ISCNIRScanSDK.SET_LAMPSTATE_COMPLETE));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunSetPGAReceiver, new IntentFilter(ISCNIRScanSDK.SET_PGA_COMPLETE));
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(RetrunSetScanRepeatsReceiver, new IntentFilter(ISCNIRScanSDK.SET_SCANREPEATS_COMPLETE));
         //endregion
     }
     private Button.OnClickListener Continuous_Scan_Stop_Click = new Button.OnClickListener()
@@ -726,22 +733,11 @@ public class ScanViewActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             SpectrumCalCoefficients = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_SPEC_COEF_DATA);
             passSpectrumCalCoefficients = SpectrumCalCoefficients;
-            //Request device MFG num
-            ISCNIRScanSDK.GetMFGNumber();
-        }
-    }
-    /**
-     *Get MFG Num (ISCNIRScanSDK.GetMFGNumber() should be called)
-     */
-    private byte MFG_NUM[];
-    public class ReturnMFGNumReceiver extends BroadcastReceiver {
-
-        public void onReceive(Context context, Intent intent) {
-            MFG_NUM = intent.getByteArrayExtra(ISCNIRScanSDK.MFGNUM_DATA);
             //Request device information
             ISCNIRScanSDK.GetDeviceInfo();
         }
     }
+
     String model_name="";
     String model_num = "";
     String serial_num = "";
@@ -770,9 +766,31 @@ public class ScanViewActivity extends Activity {
                 Notify_IsEXTVersion();
                 GetFWLevel(Tivarev);
                 InitParameter();
-                //Get the uuid of the device
-                ISCNIRScanSDK.GetUUID();
+                if(fw_level.compareTo(FW_LEVEL.LEVEL_0)>0)
+                {
+                    //Request device MFG num
+                    ISCNIRScanSDK.GetMFGNumber();
+                }
+                else
+                {
+                    Dialog_Pane_Finish("Firmware Out of Date","You must update the firmware on your NIRScan Nano to make this App working correctly!\n" +
+                            "FW required version at least V2.4.4.\nDetected version is V" + Tivarev +".");
+                }
+                //Request device MFG num
+                ISCNIRScanSDK.GetMFGNumber();
             }
+        }
+    }
+    /**
+     *Get MFG Num (ISCNIRScanSDK.GetMFGNumber() should be called)
+     */
+    private byte MFG_NUM[];
+    public class ReturnMFGNumReceiver extends BroadcastReceiver {
+
+        public void onReceive(Context context, Intent intent) {
+            MFG_NUM = intent.getByteArrayExtra(ISCNIRScanSDK.MFGNUM_DATA);
+            //Get the uuid of the device
+            ISCNIRScanSDK.GetUUID();
         }
     }
     /**
@@ -810,22 +828,22 @@ public class ScanViewActivity extends Activity {
                 /*New Applications:
                   1. Support read ADC value
                  */
-                fw_level = FW_LEVEL.LEVEL_3;//>=2.4.3 and main board ="F"
+                fw_level = FW_LEVEL.LEVEL_3;//>=2.4.4 and main board ="F"
             }
-            else if(Integer.parseInt(TivaArray[1])>=4 && Integer.parseInt(TivaArray[2])>=4)
+            else if(Integer.parseInt(TivaArray[1])>=4 && Integer.parseInt(TivaArray[2])>=3)
             {
                 /*New Applications:
                   1. Add Lock Button
                  */
-                fw_level = FW_LEVEL.LEVEL_2;//>=2.4.X
+                fw_level = FW_LEVEL.LEVEL_2;//>=2.4.4
             }
-            /*else if((TivaArray.length==3 && Integer.parseInt(TivaArray[1])>=1)|| (TivaArray.length==4 &&  Integer.parseInt(TivaArray[3])>=67))//>=2.1.0.67
+            else if((TivaArray.length==3 && Integer.parseInt(TivaArray[1])>=1)|| (TivaArray.length==4 &&  Integer.parseInt(TivaArray[3])>=67))//>=2.1.0.67
             {
                  //New Applications:
                  // 1. Support activate state
 
                 fw_level = FW_LEVEL.LEVEL_1;
-            }*/
+            }
             else
             {
                 fw_level = FW_LEVEL.LEVEL_0;
@@ -877,20 +895,19 @@ public class ScanViewActivity extends Activity {
                     uuid +=":";
                 }
             }
-            if(fw_level.compareTo(FW_LEVEL.LEVEL_0)>0)
+            CheckIsOldTIVA();
+            if(!isOldTiva)
             {
-                LocalBroadcastManager.getInstance(mContext).unregisterReceiver(DeviceInfoReceiver);
                 //Get the device is activate or not
                 ISCNIRScanSDK.ReadActivateState();
             }
             else
             {
-                Dialog_Pane_Finish("Firmware Out of Date","You must update the firmware on your NIRScan Nano to make this App working correctly!\n" +
-                        "FW required version at least V2.4.4.\nDetected version is V" + Tivarev +".");
-                /*closeFunction();
-                mMenu.findItem(R.id.action_settings).setEnabled(true);
-                mMenu.findItem(R.id.action_key).setVisible(false);*/
+                closeFunction();
+                mMenu.findItem(R.id.action_key).setVisible(false);
             }
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(DeviceInfoReceiver);
+            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(GetUUIDReceiver);
         }
     }
 
@@ -979,6 +996,23 @@ public class ScanViewActivity extends Activity {
                 closeFunction();
             }
         }
+    }
+    private void CheckIsOldTIVA()
+    {
+        String[] TivaArray= Tivarev.split(Pattern.quote("."));
+        try {
+            if(!isExtendVer && (Integer.parseInt(TivaArray[1])<4 || Integer.parseInt(TivaArray[1])<4))//Tiva <2.4.4(the newest version)
+            {
+                isOldTiva = true;
+                Dialog_Pane_OldTIVA("Firmware Out of Date", "You must update the firmware on your NIRScan Nano to make this App working correctly!\n" +
+                        "FW required version at least V2.4.4\nDetected version is V" + Tivarev + "\nDo you still want to continue?");
+            }
+            else
+                isOldTiva = false;
+        }catch (Exception e)
+        {
+
+        };
     }
     //endregion
     //region title bar
@@ -1788,7 +1822,14 @@ public class ScanViewActivity extends Activity {
                 if(saveReference == true)
                 {
                     saveReference = false;
-                    finish();
+                    ISCNIRScanSDK.ClearDeviceError();
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable(){
+
+                        @Override
+                        public void run() {
+                            finish();
+                        }}, 100);
                 }
                 else if(Current_Scan_Method == ScanMethod.Maintain) //reference
                 {
@@ -1805,7 +1846,14 @@ public class ScanViewActivity extends Activity {
                 {
                     Dialog_Pane("Fail","Restore config fail, should re-open device.");
                     saveReference = false;
-                    finish();
+                    ISCNIRScanSDK.ClearDeviceError();
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable(){
+
+                        @Override
+                        public void run() {
+                            finish();
+                        }}, 100);
                 }
                 else
                 {
@@ -1962,6 +2010,13 @@ public class ScanViewActivity extends Activity {
             }
             else if(Current_Scan_Method == ScanMethod.QuickSet)
             {
+                if(toggle_btn_quickset_continuous_scan_mode.isChecked())
+                {
+                    progressBarinsideText.setVisibility(View.VISIBLE);
+                    continuous_count = 1;
+                    progressBarinsideText.setText("Scanning : " + Integer.toString(continuous_count));
+                    continuous_count = 1;
+                }
                 PerformScan(delaytime);
             }
             else if(Current_Scan_Method == ScanMethod.Maintain)
@@ -1977,6 +2032,12 @@ public class ScanViewActivity extends Activity {
             }
             else//Normal
             {
+                if(toggle_btn_continuous_scan.isChecked())
+                {
+                    progressBarinsideText.setVisibility(View.VISIBLE);
+                    continuous_count = 1;
+                    progressBarinsideText.setText("Scanning : " + Integer.toString(continuous_count));
+                }
                 PerformScan(delaytime);
             }
             //---------------------------------------------------------------------------------------------------
@@ -2190,6 +2251,7 @@ public class ScanViewActivity extends Activity {
         writeCSV( Scan_Spectrum_Data);
         //------------------------------------------------------------------------------------------------------------
         calProgress.setVisibility(View.GONE);
+        progressBarinsideText.setVisibility(View.GONE);
         btn_scan.setText(getString(R.string.scan));
         EnableAllComponent();
         Disable_Stop_Continous_button();
@@ -2220,16 +2282,24 @@ public class ScanViewActivity extends Activity {
             interval_time = Integer.parseInt(et_quickset_scan_interval_time.getText().toString());
             repeat = Integer.parseInt(et_quickset_continuous_scan_repeat.getText().toString()) -1;//-1 want to match scan count
         }
-        if(show_finish_continous_dialog == true)
-        {
-            String content = "There were totally " + (continuous_count+1) + " scans has been performed!.";
-            Dialog_Pane("Continuous Scan Completed!",content);
-            show_finish_continous_dialog = false;
-            continuous_count = 0;
-        }
         if (continuous) {
+            progressBarinsideText.setText("Scanning : " + Integer.toString(continuous_count +1));
+            if(continuous_count == repeat +1 || stop_continuous == true)
+            {
+                continuous = false;
+                stop_continuous = false;
+                toggle_btn_quickset_continuous_scan_mode.setChecked(false);
+                toggle_btn_continuous_scan.setChecked(false);
+                Disable_Stop_Continous_button();
+                String content = "There were totally " + continuous_count + " scans has been performed!.";
+                Dialog_Pane("Continuous Scan Completed!",content);
+                continuous_count = 0;
+                progressBarinsideText.setVisibility(View.GONE);
+                return;
+            }
             continuous_count ++;
             calProgress.setVisibility(View.VISIBLE);
+            progressBarinsideText.setVisibility(View.VISIBLE);
             btn_scan.setText(getString(R.string.scanning));
             DisableAllComponent();
             Enable_Stop_Continous_button();
@@ -2247,15 +2317,6 @@ public class ScanViewActivity extends Activity {
                     ISCNIRScanSDK.StartScan();
                 }}, delaytime);
 
-            if(continuous_count == repeat || stop_continuous == true)
-            {
-                continuous = false;
-                stop_continuous = false;
-                toggle_btn_quickset_continuous_scan_mode.setChecked(false);
-                toggle_btn_continuous_scan.setChecked(false);
-                show_finish_continous_dialog = true;
-                Disable_Stop_Continous_button();
-            }
         }
     }
     /**
@@ -3449,6 +3510,29 @@ public class ScanViewActivity extends Activity {
         alertDialog = alertDialogBuilder.create();
         alertDialog.show();
     }
+    private void Dialog_Pane_OldTIVA(String title,String content)
+    {
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
+        alertDialogBuilder.setTitle(title);
+        alertDialogBuilder.setMessage(content);
+
+        alertDialogBuilder.setNegativeButton(getResources().getString(R.string.yes), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface arg0, int arg1) {
+                alertDialog.dismiss();
+                NotValidValueDialog("Limited Functions","Running with older Tiva firmware\nis not recommended and functions\nwill be limited!");
+            }
+        });
+        alertDialogBuilder.setPositiveButton(getResources().getString(R.string.no), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface arg0, int arg1) {
+                alertDialog.dismiss();
+                finish();
+            }
+        });
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
     /**
      * Dialog that tells the user that a Nano is not connected. The activity will finish when the
      * user selects ok
@@ -3477,7 +3561,7 @@ public class ScanViewActivity extends Activity {
         final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(mContext);
         alertDialogBuilder.setTitle("Finish");
         alertDialogBuilder.setCancelable(false);
-        alertDialogBuilder.setMessage("Replace Factory Reference is complete.\n Should reconnect bluetooth to reload reference.");
+        alertDialogBuilder.setMessage("Replace Factory Reference is complete.\nShould reconnect bluetooth to reload reference.");
 
         alertDialogBuilder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
@@ -3561,7 +3645,7 @@ public class ScanViewActivity extends Activity {
         }
         else
         {
-            if(fw_level.compareTo(FW_LEVEL.LEVEL_0)==0)
+            if(fw_level.compareTo(FW_LEVEL.LEVEL_0)==0 || isOldTiva)
                 closeFunction();
             else if(getStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.Activacatestatus, null).contains("Activated"))
             {
@@ -3629,6 +3713,9 @@ public class ScanViewActivity extends Activity {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnLampRampUpADCReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnLampADCAverageReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(ReturnMFGNumReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunSetLampReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunSetPGAReceiver);
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(RetrunSetScanRepeatsReceiver);
         mHandler.removeCallbacksAndMessages(null);
         storeBooleanPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.continuousScan, toggle_btn_continuous_scan.isChecked());
     }
@@ -3867,4 +3954,30 @@ public class ScanViewActivity extends Activity {
                 ISCNIRScanSDK.StartScan();
             }}, delaytime);
     }
+    //region Receiver
+    /**
+     *  Success set Lamp state(ISCNIRScanSDK.LampState should be called)
+     */
+    public class RetrunSetLampReceiver extends BroadcastReceiver {
+        public void onReceive(Context context, Intent intent) {
+            //Complete set lamp on,off,auto
+        }
+    }
+    /**
+     *  Success set PGA( ISCNIRScanSDK.SetPGA should be called)
+     */
+    public class RetrunSetPGAReceiver extends BroadcastReceiver {
+        public void onReceive(Context context, Intent intent) {
+            //Complete set pga
+        }
+    }
+    /**
+     *  Success set Scan Repeats( ISCNIRScanSDK.setScanAverage should be called)
+     */
+    public class RetrunSetScanRepeatsReceiver extends BroadcastReceiver {
+        public void onReceive(Context context, Intent intent) {
+            //Complete set scan repeats
+        }
+    }
+    //endregion
 }

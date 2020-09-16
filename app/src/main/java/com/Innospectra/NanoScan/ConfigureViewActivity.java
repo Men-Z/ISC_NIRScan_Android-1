@@ -73,7 +73,7 @@ public class ConfigureViewActivity extends Activity {
         ll_scan_config.setOnClickListener(View_Click);
         toggle_btn_lock_button.setOnCheckedChangeListener(Toggle_Button_OnCheckedChanged);
 
-        if(ScanViewActivity.fw_level.compareTo(ScanViewActivity.FW_LEVEL.LEVEL_1)<=0)
+        if(ScanViewActivity.fw_level.compareTo(ScanViewActivity.FW_LEVEL.LEVEL_1)<=0 || ISCNIRScanSDK.getStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.Activacatestatus, "").contains("Activated") ==false|| ScanViewActivity.isOldTiva)
         {
             ll_lock_button.setVisibility(View.GONE);
             view_lock_button.setVisibility(View.GONE);

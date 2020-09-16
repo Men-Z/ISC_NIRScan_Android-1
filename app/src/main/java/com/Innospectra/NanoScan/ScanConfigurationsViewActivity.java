@@ -244,7 +244,7 @@ public class ScanConfigurationsViewActivity extends Activity {
         mMenu = menu;
         mMenu.findItem(R.id.action_add).setEnabled(false);
         //Tiva version <2.1.0.67
-        if(ScanViewActivity.fw_level.compareTo(ScanViewActivity.FW_LEVEL.LEVEL_0)==0)
+        if(ScanViewActivity.fw_level.compareTo(ScanViewActivity.FW_LEVEL.LEVEL_0)==0 || ISCNIRScanSDK.getStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.Activacatestatus, "").contains("Activated") ==false || ScanViewActivity.isOldTiva)
             mMenu.findItem(R.id.action_add).setVisible(false);
         return true;
     }

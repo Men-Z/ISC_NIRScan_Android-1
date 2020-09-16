@@ -10,8 +10,8 @@ android {
         applicationId "com.Innospectra.ISCScanNano"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode  3
-        versionName "2.13"
+        versionCode  4
+        versionName "2.14"
     }
     sourceSets {
         main {
