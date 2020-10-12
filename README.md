@@ -2,10 +2,11 @@
 
 Only the following smart phones have been tested:
 1. Samsung Galaxy J2 prime (SM-G532G), Android version: 6.0.1
-2. Xiaomi Redmi Note 4, Android version: 6.0 MRA58K
-3. Xiaomi Mi MIX 2, Android version: 8.0.0 OPR1.170623.027
-4. ASUS Zenfone 3 Deluxe (ZS570KL), Android version: 8.0.0
-5. Google Pixel 4a, Android version: 11
+2.	Samsung Galaxy S8+ (SM-G955FD), Android version: 9 
+3. Xiaomi Redmi Note 4, Android version: 6.0 MRA58K
+4. Xiaomi Mi MIX 2, Android version: 8.0.0 OPR1.170623.027
+5. ASUS Zenfone 3 Deluxe (ZS570KL), Android version: 8.0.0
+6. Google Pixel 4a, Android version: 11
 
 # License - InnoSpectra Corp.
 
