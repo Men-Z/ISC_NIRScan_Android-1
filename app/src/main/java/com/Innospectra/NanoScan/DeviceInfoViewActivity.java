@@ -69,7 +69,10 @@ public class DeviceInfoViewActivity extends Activity {
             public void onReceive(Context context, Intent intent) {
                 tv_manuf.setText(intent.getStringExtra(ISCNIRScanSDK.EXTRA_MANUF_NAME).replace("\n", ""));
                 tv_model.setText(intent.getStringExtra(ISCNIRScanSDK.EXTRA_MODEL_NUM).replace("\n", ""));
-                tv_serial.setText(intent.getStringExtra(ISCNIRScanSDK.EXTRA_SERIAL_NUM));
+                String SerialNumber = intent.getStringExtra(ISCNIRScanSDK.EXTRA_SERIAL_NUM);
+                if(SerialNumber.length() >=8)
+                    SerialNumber = SerialNumber.substring(0,8);
+                tv_serial.setText(SerialNumber);
                 tv_hw.setText(intent.getStringExtra(ISCNIRScanSDK.EXTRA_HW_REV));
                 tv_tiva.setText(intent.getStringExtra(ISCNIRScanSDK.EXTRA_TIVA_REV));
 

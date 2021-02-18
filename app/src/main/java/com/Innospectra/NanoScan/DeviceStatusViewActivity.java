@@ -72,8 +72,8 @@ public class DeviceStatusViewActivity extends Activity {
         ISCNIRScanSDK.GetDeviceStatus();
         setActivityTouchDisable(true);
         /**
-                 * Set up receiver for device status information(ISCNIRScanSDK.GetDeviceStatus() should be called)
-                 */
+         * Set up receiver for device status information(ISCNIRScanSDK.GetDeviceStatus() should be called)
+         */
         mStatusReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -86,8 +86,8 @@ public class DeviceStatusViewActivity extends Activity {
                 devbyte = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_DEV_STATUS_BYTE);
                 errbyte = intent.getByteArrayExtra(ISCNIRScanSDK.EXTRA_ERR_BYTE);
                 tv_batt.setText(getString(R.string.batt_level_value, batt));
-                tv_temp.setText(getString(R.string.temp_value_c, Float.toString(temp)));
-                tv_humid.setText(getString(R.string.humid_value,Float.toString(humid)));
+                tv_temp.setText(getString(R.string.temp_value_c, Integer.toString((int) temp)));
+                tv_humid.setText(getString(R.string.humid_value,Integer.toString((int) humid)));
                 tv_lamptime.setText(GetLampTimeString(lamptime));
                 ProgressBar pb = (ProgressBar)findViewById(R.id.pb_status);
                 pb.setVisibility(View.INVISIBLE);

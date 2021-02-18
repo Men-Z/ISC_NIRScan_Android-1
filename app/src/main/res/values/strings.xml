@@ -134,7 +134,7 @@
      <string name="batt_level_value">%1$d%%</string>
      <string name="temp_value_c">%1$s&#x2103;</string>
      <string name="temp_value_f">%1$s&#x2109;</string>
-     <string name="humid_value">%1$s%%RH</string>
+     <string name="humid_value">%1$s%% RH</string>
 
      <string name="stored_configurations">Stored Configurations</string>
      <string name="reading_configurations">Reading Scan Configurations…</string>
