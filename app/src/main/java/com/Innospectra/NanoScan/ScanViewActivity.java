@@ -2240,10 +2240,10 @@ public class ScanViewActivity extends Activity {
         long delaytime =0;
         Boolean isLockButton = getBooleanPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.LockButton,true);
         if(isLockButton) //User open lock button on scan setting
-        {
             ISCNIRScanSDK.ControlPhysicalButton(ISCNIRScanSDK.PhysicalButton.Lock);
-            delaytime = 300;
-        }
+        else
+            ISCNIRScanSDK.ControlPhysicalButton(ISCNIRScanSDK.PhysicalButton.Unlock);
+        delaytime = 300;
         if(getStringPref(mContext, ISCNIRScanSDK.SharedPreferencesKeys.Activacatestatus, "").contains("Activated") ==false)
         {
             closeFunction();
